@@ -39,4 +39,4 @@ export interface IUser {
 }
 
 // Client-safe user type (without password)
-export interface SafeUser extends Omit<IUser, 'password'> {}
+export type SafeUser = Omit<IUser, 'password'>;

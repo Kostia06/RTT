@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Execute query with pagination
-    const { data: products, error, count } = await query
+    const { data: products, error } = await query
       .order('is_featured', { ascending: false })
       .order('created_at', { ascending: false })
       .range(skip, skip + limit - 1);

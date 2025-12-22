@@ -331,13 +331,7 @@ function ShopContent() {
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        addToCart({
-                          id: product.id,
-                          name: product.name,
-                          price: product.price,
-                          image: product.images?.[0]?.url,
-                          quantity: 1,
-                        });
+                        addToCart(product, undefined, 1);
                       }}
                       className="w-12 h-12 bg-black text-white flex items-center justify-center hover:bg-gray-800 active:bg-gray-900 transition-colors touch-manipulation"
                       aria-label="Add to cart"

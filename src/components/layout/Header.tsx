@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { signOut } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import { CartIcon } from '@/components/cart/CartIcon';
 import { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
@@ -39,8 +39,10 @@ export const Header: React.FC = () => {
     }
   }, [mobileMenuOpen]);
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/' });
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/';
   };
 
   const navLinks = [

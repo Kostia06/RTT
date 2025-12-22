@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +24,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export const RegisterForm: React.FC = () => {
   const router = useRouter();
   const [error, setError] = useState<string>('');
+  const supabase = createClient();
   const {
     register,
     handleSubmit,
@@ -36,32 +37,24 @@ export const RegisterForm: React.FC = () => {
     try {
       setError('');
 
-      // Call registration API
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        }),
+      // Register with Supabase
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+          },
+        },
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        setError(result.error || 'Registration failed. Please try again.');
+      if (signUpError) {
+        setError(signUpError.message);
         return;
       }
 
       // Auto-login after successful registration
-      const signInResult = await signIn('credentials', {
-        redirect: false,
-        email: data.email,
-        password: data.password,
-      });
-
-      if (signInResult?.ok) {
+      if (authData.user) {
         router.push('/account');
         router.refresh();
       }

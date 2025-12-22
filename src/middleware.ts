@@ -1,74 +1,86 @@
-import { withAuth } from 'next-auth/middleware';
-import { NextResponse } from 'next/server';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const pathname = req.nextUrl.pathname;
-
-    // Admin routes require admin or employee role
-    if (pathname.startsWith('/admin')) {
-      if (token?.role !== 'admin' && token?.role !== 'employee') {
-        return NextResponse.redirect(new URL('/login', req.url));
-      }
-    }
-
-    // Customer routes require any authenticated user
-    if (pathname.startsWith('/account') || pathname.startsWith('/orders') || pathname.startsWith('/profile')) {
-      if (!token) {
-        return NextResponse.redirect(new URL('/login', req.url));
-      }
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const pathname = req.nextUrl.pathname;
-
-        // Public routes are always authorized
-        if (
-          pathname.startsWith('/api/auth') ||
-          pathname.startsWith('/login') ||
-          pathname.startsWith('/register') ||
-          pathname.startsWith('/shop') ||
-          pathname.startsWith('/classes') ||
-          pathname.startsWith('/cart') ||
-          pathname.startsWith('/checkout') ||
-          pathname.startsWith('/about') ||
-          pathname.startsWith('/contact') ||
-          pathname === '/'
-        ) {
-          return true;
-        }
-
-        // Admin routes require admin or employee role
-        if (pathname.startsWith('/admin')) {
-          return token?.role === 'admin' || token?.role === 'employee';
-        }
-
-        // Customer routes require authentication
-        if (pathname.startsWith('/account') || pathname.startsWith('/orders') || pathname.startsWith('/profile')) {
-          return !!token;
-        }
-
-        // Default: allow
-        return true;
-      },
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
     },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Protected routes that require authentication
+  const protectedPaths = ['/account', '/orders', '/classes/my'];
+  const isProtectedPath = protectedPaths.some(path =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  // Redirect to login if trying to access protected route without auth
+  if (isProtectedPath && !user) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
-);
+
+  // Redirect to account if trying to access auth pages while logged in
+  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register') && user) {
+    return NextResponse.redirect(new URL('/account', request.url));
+  }
+
+  return response;
+}
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|images/).*)',
+    '/account/:path*',
+    '/orders/:path*',
+    '/classes/my/:path*',
+    '/login',
+    '/register',
   ],
 };

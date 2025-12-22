@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/hooks/useAuth';
-import { signOut } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui';
 export default function AccountPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -29,8 +30,10 @@ export default function AccountPage() {
     return null;
   }
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/' });
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+    router.refresh();
   };
 
   return (
@@ -42,10 +45,10 @@ export default function AccountPage() {
         <div className="bg-white p-8 shadow-sm mb-8">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-black text-white flex items-center justify-center text-2xl font-bold rounded-full">
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
+              {user?.user_metadata?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-black">{user?.name}</h2>
+              <h2 className="text-xl font-bold text-black">{user?.user_metadata?.name || 'User'}</h2>
               <p className="text-gray-600">{user?.email}</p>
             </div>
           </div>

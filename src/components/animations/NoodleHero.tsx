@@ -150,14 +150,14 @@ export const NoodleHero: React.FC = () => {
         />
       </div>
 
-      {/* Floating Kanji characters */}
-      <div className="floating-kanji absolute top-[10%] left-[5%] text-white text-[20vw] font-bold select-none">
+      {/* Floating Kanji characters - hidden on small mobile */}
+      <div className="floating-kanji hidden sm:block absolute top-[10%] left-[5%] text-white text-[15vw] md:text-[12vw] lg:text-[10vw] font-bold select-none pointer-events-none">
         麺
       </div>
-      <div className="floating-kanji absolute top-[30%] right-[8%] text-white text-[15vw] font-bold select-none">
+      <div className="floating-kanji hidden sm:block absolute top-[30%] right-[8%] text-white text-[12vw] md:text-[10vw] lg:text-[8vw] font-bold select-none pointer-events-none">
         豚
       </div>
-      <div className="floating-kanji absolute bottom-[20%] left-[15%] text-white text-[18vw] font-bold select-none">
+      <div className="floating-kanji hidden sm:block absolute bottom-[20%] left-[15%] text-white text-[14vw] md:text-[11vw] lg:text-[9vw] font-bold select-none pointer-events-none">
         骨
       </div>
 
@@ -170,10 +170,10 @@ export const NoodleHero: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div className="hero-content relative z-10 text-center px-4 max-w-6xl mx-auto">
+      <div className="hero-content relative z-10 text-center px-4 sm:px-6 max-w-6xl mx-auto">
 
         {/* Main title with character animation */}
-        <h1 className="text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-black leading-[0.85] tracking-[-0.04em] text-white mb-8"
+        <h1 className="text-[13vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-black leading-[0.9] sm:leading-[0.85] tracking-[-0.04em] text-white mb-6 sm:mb-8"
           style={{ perspective: '1000px' }}
         >
           <span className="block overflow-hidden">
@@ -200,24 +200,24 @@ export const NoodleHero: React.FC = () => {
         </h1>
 
         {/* Subtitle */}
-        <p className="hero-subtitle text-lg sm:text-xl md:text-2xl text-white/60 max-w-xl mx-auto mb-12 font-light tracking-wide">
+        <p className="hero-subtitle text-base sm:text-lg md:text-xl lg:text-2xl text-white/60 max-w-xl mx-auto mb-8 sm:mb-10 md:mb-12 font-light tracking-wide px-4">
           18 hours of patience in every bowl.
-          <br />
-          <span className="text-white/40">Hakata tradition, Calgary crafted.</span>
+          <br className="hidden sm:block" />
+          <span className="sm:block text-white/40"> Hakata tradition, Calgary crafted.</span>
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4">
           <Link
             href="/shop"
-            className="hero-cta group relative px-12 py-5 bg-white text-black font-bold text-sm tracking-[0.2em] uppercase overflow-hidden"
+            className="hero-cta group relative px-8 sm:px-12 py-4 sm:py-5 bg-white text-black font-bold text-sm tracking-[0.2em] uppercase overflow-hidden touch-manipulation active:bg-gray-100"
           >
             <span className="relative z-10">Shop Now</span>
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
           </Link>
           <Link
             href="/classes"
-            className="hero-cta group relative px-12 py-5 border border-white/30 text-white font-bold text-sm tracking-[0.2em] uppercase overflow-hidden hover:border-white transition-colors duration-300"
+            className="hero-cta group relative px-8 sm:px-12 py-4 sm:py-5 border-2 sm:border border-white/30 text-white font-bold text-sm tracking-[0.2em] uppercase overflow-hidden hover:border-white active:bg-white/10 transition-colors duration-300 touch-manipulation"
           >
             <span className="relative z-10">Learn the Craft</span>
           </Link>
@@ -225,18 +225,18 @@ export const NoodleHero: React.FC = () => {
       </div>
 
       {/* Scroll indicator */}
-      <div className="hero-scroll absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
-        <span className="text-white/40 text-xs tracking-[0.3em] uppercase">Scroll</span>
-        <div className="w-px h-16 bg-gradient-to-b from-white/40 to-transparent relative overflow-hidden">
+      <div className="hero-scroll absolute bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:gap-4">
+        <span className="text-white/40 text-[10px] sm:text-xs tracking-[0.3em] uppercase">Scroll</span>
+        <div className="w-px h-12 sm:h-16 bg-gradient-to-b from-white/40 to-transparent relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1/2 bg-white animate-scroll-line" />
         </div>
       </div>
 
       {/* Corner accents */}
-      <div className="absolute top-8 left-8 w-12 h-12 border-l border-t border-white/20" />
-      <div className="absolute top-8 right-8 w-12 h-12 border-r border-t border-white/20" />
-      <div className="absolute bottom-8 left-8 w-12 h-12 border-l border-b border-white/20" />
-      <div className="absolute bottom-8 right-8 w-12 h-12 border-r border-b border-white/20" />
+      <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-8 h-8 sm:w-12 sm:h-12 border-l border-t border-white/20" />
+      <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-8 h-8 sm:w-12 sm:h-12 border-r border-t border-white/20" />
+      <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-8 h-8 sm:w-12 sm:h-12 border-l border-b border-white/20" />
+      <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-8 h-8 sm:w-12 sm:h-12 border-r border-b border-white/20" />
 
       <style jsx>{`
         .text-outline {

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/db/supabase';
+import { getServiceSupabase } from '@/lib/db/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = getServiceSupabase();
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');

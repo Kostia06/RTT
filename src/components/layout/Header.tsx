@@ -49,7 +49,7 @@ export const Header: React.FC = () => {
     { href: '/shop', label: 'Shop' },
     { href: '/classes', label: 'Classes' },
     { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
+    { href: '#contact', label: 'Contact' },
   ];
 
   return (
@@ -64,16 +64,16 @@ export const Header: React.FC = () => {
       {/* Top accent line */}
       <div className={`h-[2px] bg-gradient-to-r from-transparent via-white/50 to-transparent transition-opacity duration-500 ${scrolled ? 'opacity-0' : 'opacity-100'}`} />
 
-      <nav className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
           <Link
             href="/"
-            className="group"
+            className="group flex-shrink-0"
           >
             <div className={`transition-colors duration-300 ${scrolled ? 'text-black' : 'text-white'}`}>
-              <span className="text-sm tracking-[0.15em] uppercase font-bold block leading-tight">Respect</span>
-              <span className="text-sm tracking-[0.15em] uppercase font-bold block leading-tight">The Technique</span>
+              <span className="text-xs sm:text-sm tracking-[0.15em] uppercase font-bold block leading-tight">Respect</span>
+              <span className="text-xs sm:text-sm tracking-[0.15em] uppercase font-bold block leading-tight">The Technique</span>
             </div>
           </Link>
 
@@ -155,14 +155,15 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-4">
+          <div className="md:hidden flex items-center gap-2 sm:gap-4">
             <CartIcon scrolled={scrolled} />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`relative w-8 h-8 flex flex-col items-center justify-center gap-1.5 transition-colors ${
+              className={`relative w-11 h-11 flex flex-col items-center justify-center gap-1.5 transition-colors touch-manipulation ${
                 scrolled ? 'text-black' : 'text-white'
               }`}
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               <span className={`block w-6 h-0.5 bg-current transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
               <span className={`block w-6 h-0.5 bg-current transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
@@ -175,27 +176,27 @@ export const Header: React.FC = () => {
         {mobileMenuOpen && (
           <div
             ref={menuRef}
-            className="md:hidden overflow-hidden bg-white -mx-6 px-6"
+            className="md:hidden overflow-hidden bg-white -mx-4 sm:-mx-6 px-4 sm:px-6 border-t border-gray-100"
           >
-            <div className="py-6 space-y-1">
+            <div className="py-4 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="mobile-menu-item block py-3 text-lg font-medium text-gray-900 hover:text-gray-600 border-b border-gray-100"
+                  className="mobile-menu-item block py-4 text-base font-semibold text-gray-900 hover:text-black active:bg-gray-50 border-b border-gray-100 transition-colors touch-manipulation"
                 >
                   {link.label}
                 </Link>
               ))}
 
-              <div className="pt-4 space-y-1">
+              <div className="pt-4 space-y-2">
                 {isAuthenticated ? (
                   <>
                     <Link
                       href="/account"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item block py-3 text-lg font-medium text-gray-900 hover:text-gray-600"
+                      className="mobile-menu-item block py-4 text-base font-semibold text-gray-900 hover:text-black active:bg-gray-50 transition-colors touch-manipulation"
                     >
                       Account
                     </Link>
@@ -204,24 +205,24 @@ export const Header: React.FC = () => {
                         handleSignOut();
                         setMobileMenuOpen(false);
                       }}
-                      className="mobile-menu-item block w-full text-left py-3 text-lg font-medium text-gray-500 hover:text-gray-900"
+                      className="mobile-menu-item block w-full text-left py-4 text-base font-semibold text-gray-500 hover:text-gray-900 active:bg-gray-50 transition-colors touch-manipulation"
                     >
                       Sign Out
                     </button>
                   </>
                 ) : (
-                  <div className="mobile-menu-item flex gap-4 pt-4">
+                  <div className="mobile-menu-item flex gap-3 pt-2 pb-2">
                     <Link
                       href="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex-1 py-3 text-center text-sm font-bold tracking-[0.1em] uppercase border border-black text-black"
+                      className="flex-1 py-4 text-center text-sm font-bold tracking-[0.1em] uppercase border-2 border-black text-black hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex-1 py-3 text-center text-sm font-bold tracking-[0.1em] uppercase bg-black text-white"
+                      className="flex-1 py-4 text-center text-sm font-bold tracking-[0.1em] uppercase bg-black text-white hover:bg-gray-800 active:bg-gray-900 transition-colors touch-manipulation"
                     >
                       Join
                     </Link>

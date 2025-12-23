@@ -21,7 +21,7 @@ export const Header: React.FC = () => {
   const logoRef = useRef<HTMLDivElement>(null);
 
   // Pages with dark hero sections that should have transparent navbar initially
-  const darkHeroPages = ['/', '/shop', '/classes', '/login', '/register'];
+  const darkHeroPages = ['/', '/shop', '/classes', '/login', '/register', '/about'];
   const hasDarkHero = darkHeroPages.some(page =>
     pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/classes/')
   );

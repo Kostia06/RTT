@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Input } from '@/components/ui';
 import Link from 'next/link';
 
 const registerSchema = z.object({
@@ -65,61 +64,90 @@ export const RegisterForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Input
-        label="Full Name"
-        type="text"
-        placeholder="John Doe"
-        error={errors.name?.message}
-        {...register('name')}
-      />
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div>
+        <label className="block text-sm font-bold text-black mb-2 tracking-tight">
+          Full Name
+        </label>
+        <input
+          type="text"
+          placeholder="John Doe"
+          className="w-full px-4 py-3 border-2 border-gray-200 focus:border-black focus:outline-none transition-colors text-base"
+          {...register('name')}
+        />
+        {errors.name && (
+          <p className="mt-2 text-sm text-red-600">{errors.name.message}</p>
+        )}
+      </div>
 
-      <Input
-        label="Email"
-        type="email"
-        placeholder="you@example.com"
-        error={errors.email?.message}
-        {...register('email')}
-      />
+      <div>
+        <label className="block text-sm font-bold text-black mb-2 tracking-tight">
+          Email Address
+        </label>
+        <input
+          type="email"
+          placeholder="you@example.com"
+          className="w-full px-4 py-3 border-2 border-gray-200 focus:border-black focus:outline-none transition-colors text-base"
+          {...register('email')}
+        />
+        {errors.email && (
+          <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+        )}
+      </div>
 
-      <Input
-        label="Password"
-        type="password"
-        placeholder="••••••••"
-        error={errors.password?.message}
-        helperText="Must be at least 6 characters"
-        {...register('password')}
-      />
+      <div>
+        <label className="block text-sm font-bold text-black mb-2 tracking-tight">
+          Password
+        </label>
+        <input
+          type="password"
+          placeholder="••••••••"
+          className="w-full px-4 py-3 border-2 border-gray-200 focus:border-black focus:outline-none transition-colors text-base"
+          {...register('password')}
+        />
+        {errors.password ? (
+          <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
+        ) : (
+          <p className="mt-2 text-xs text-gray-500">Must be at least 6 characters</p>
+        )}
+      </div>
 
-      <Input
-        label="Confirm Password"
-        type="password"
-        placeholder="••••••••"
-        error={errors.confirmPassword?.message}
-        {...register('confirmPassword')}
-      />
+      <div>
+        <label className="block text-sm font-bold text-black mb-2 tracking-tight">
+          Confirm Password
+        </label>
+        <input
+          type="password"
+          placeholder="••••••••"
+          className="w-full px-4 py-3 border-2 border-gray-200 focus:border-black focus:outline-none transition-colors text-base"
+          {...register('confirmPassword')}
+        />
+        {errors.confirmPassword && (
+          <p className="mt-2 text-sm text-red-600">{errors.confirmPassword.message}</p>
+        )}
+      </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
-      <Button
+      <button
         type="submit"
-        variant="primary"
-        size="lg"
-        isLoading={isSubmitting}
-        className="w-full"
+        disabled={isSubmitting}
+        className="w-full px-8 py-4 bg-black text-white text-xs font-bold tracking-[0.15em] uppercase hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Create Account
-      </Button>
+        {isSubmitting ? 'Creating Account...' : 'Create Account'}
+      </button>
 
-      <div className="text-center text-sm">
-        <span className="text-gray-600">Already have an account? </span>
-        <Link href="/login" className="font-medium text-black hover:underline">
-          Sign in
-        </Link>
+      <div className="pt-4 border-t border-gray-100">
+        <p className="text-center text-sm text-gray-600">
+          Already have an account?{' '}
+          <Link href="/login" className="font-bold text-black hover:underline underline-offset-2">
+            Sign in
+          </Link>
+        </p>
       </div>
     </form>
   );

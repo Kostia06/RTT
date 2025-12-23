@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button, Input } from '@/components/ui';
 import Link from 'next/link';
 
 const loginSchema = z.object({
@@ -50,44 +49,58 @@ export const LoginForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Input
-        label="Email"
-        type="email"
-        placeholder="you@example.com"
-        error={errors.email?.message}
-        {...register('email')}
-      />
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div>
+        <label className="block text-sm font-bold text-black mb-2 tracking-tight">
+          Email Address
+        </label>
+        <input
+          type="email"
+          placeholder="you@example.com"
+          className="w-full px-4 py-3 border-2 border-gray-200 focus:border-black focus:outline-none transition-colors text-base"
+          {...register('email')}
+        />
+        {errors.email && (
+          <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+        )}
+      </div>
 
-      <Input
-        label="Password"
-        type="password"
-        placeholder="••••••••"
-        error={errors.password?.message}
-        {...register('password')}
-      />
+      <div>
+        <label className="block text-sm font-bold text-black mb-2 tracking-tight">
+          Password
+        </label>
+        <input
+          type="password"
+          placeholder="••••••••"
+          className="w-full px-4 py-3 border-2 border-gray-200 focus:border-black focus:outline-none transition-colors text-base"
+          {...register('password')}
+        />
+        {errors.password && (
+          <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
+        )}
+      </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
-      <Button
+      <button
         type="submit"
-        variant="primary"
-        size="lg"
-        isLoading={isSubmitting}
-        className="w-full"
+        disabled={isSubmitting}
+        className="w-full px-8 py-4 bg-black text-white text-xs font-bold tracking-[0.15em] uppercase hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Sign In
-      </Button>
+        {isSubmitting ? 'Signing In...' : 'Sign In'}
+      </button>
 
-      <div className="text-center text-sm">
-        <span className="text-gray-600">Don&apos;t have an account? </span>
-        <Link href="/register" className="font-medium text-black hover:underline">
-          Sign up
-        </Link>
+      <div className="pt-4 border-t border-gray-100">
+        <p className="text-center text-sm text-gray-600">
+          Don&apos;t have an account?{' '}
+          <Link href="/register" className="font-bold text-black hover:underline underline-offset-2">
+            Create one
+          </Link>
+        </p>
       </div>
     </form>
   );

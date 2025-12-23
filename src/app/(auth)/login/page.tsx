@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/LoginForm';
-import { Card } from '@/components/ui';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -10,25 +9,27 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6 sm:space-y-8">
-        <div className="text-center">
-          <Link href="/" className="inline-block touch-manipulation active:opacity-70 transition-opacity">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Respect the Technique
-            </h1>
+    <div className="min-h-screen flex flex-col">
+      {/* Hero Section */}
+      <div className="bg-black text-white pt-20 sm:pt-24 pb-12 sm:pb-16">
+        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="inline-block mb-8 text-white/60 hover:text-white transition-colors text-xs tracking-[0.15em] uppercase">
+            ← Back to Home
           </Link>
-          <h2 className="mt-4 sm:mt-6 text-xl sm:text-2xl font-semibold text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Welcome back! Enter your credentials to continue.
+          <h1 className="text-4xl sm:text-5xl font-black tracking-[-0.02em] mb-3">
+            Welcome Back
+          </h1>
+          <p className="text-sm text-white/60">
+            Sign in to access your account and continue your ramen journey.
           </p>
         </div>
+      </div>
 
-        <Card className="mt-6 sm:mt-8">
+      {/* Form Section */}
+      <div className="flex-1 bg-white py-12 sm:py-16">
+        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
           <LoginForm />
-        </Card>
+        </div>
       </div>
     </div>
   );

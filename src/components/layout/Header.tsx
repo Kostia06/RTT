@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { CartIcon } from '@/components/cart/CartIcon';
 import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -12,23 +13,36 @@ gsap.registerPlugin(ScrollTrigger);
 
 export const Header: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);
 
+  // Pages with dark hero sections that should have transparent navbar initially
+  const darkHeroPages = ['/', '/shop', '/classes', '/login', '/register'];
+  const hasDarkHero = darkHeroPages.some(page =>
+    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/classes/')
+  );
+
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      // For pages with dark hero, transition to white background on scroll
+      // For pages with white background, always show white navbar
+      if (hasDarkHero) {
+        setScrolled(window.scrollY > 20);
+      } else {
+        setScrolled(true);
+      }
     };
 
-    // Check initial scroll position
+    // Check initial state
     handleScroll();
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [hasDarkHero]);
 
   useEffect(() => {
     if (!headerRef.current) return;

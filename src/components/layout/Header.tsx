@@ -48,10 +48,45 @@ export const Header: React.FC = () => {
           }
         },
       });
+
+      // Smooth fade + slide animation on scroll
+      let lastScroll = 0;
+      ScrollTrigger.create({
+        onUpdate: (self) => {
+          const currentScroll = self.scroll();
+          if (currentScroll > 100) {
+            if (currentScroll > lastScroll && !mobileMenuOpen) {
+              // Scrolling down - fade out + slide up
+              gsap.to(headerRef.current, {
+                y: -20,
+                opacity: 0,
+                duration: 0.25,
+                ease: 'power1.inOut',
+              });
+            } else {
+              // Scrolling up - fade in + slide down
+              gsap.to(headerRef.current, {
+                y: 0,
+                opacity: 1,
+                duration: 0.3,
+                ease: 'power2.out',
+              });
+            }
+          } else {
+            // At top - ensure visible
+            gsap.to(headerRef.current, {
+              y: 0,
+              opacity: 1,
+              duration: 0.2,
+            });
+          }
+          lastScroll = currentScroll;
+        },
+      });
     }, headerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (mobileMenuOpen && menuRef.current) {
@@ -86,7 +121,7 @@ export const Header: React.FC = () => {
       ref={headerRef}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.06)] border-b border-black/5'
+          ? 'shadow-[0_1px_0_rgba(0,0,0,0.06)] border-b border-black/5'
           : ''
       }`}
     >
@@ -199,7 +234,7 @@ export const Header: React.FC = () => {
         {mobileMenuOpen && (
           <div
             ref={menuRef}
-            className="md:hidden overflow-hidden backdrop-blur-lg -mx-4 sm:-mx-6 px-4 sm:px-6 border-t border-white/10"
+            className="md:hidden overflow-hidden bg-black/90 -mx-4 sm:-mx-6 px-4 sm:px-6 border-t border-white/10"
           >
             <div className="py-3 space-y-0.5 max-h-[calc(100vh-4rem)] overflow-y-auto">
               {navLinks.map((link) => (

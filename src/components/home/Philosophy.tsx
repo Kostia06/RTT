@@ -28,16 +28,6 @@ export const Philosophy: React.FC = () => {
         }
       );
 
-      // Pin the entire section while animating content
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: 'top top',
-        end: '+=150%',
-        pin: true,
-        pinSpacing: true,
-        anticipatePin: 1,
-      });
-
       // Counter animation
       gsap.fromTo(
         { val: 0 },
@@ -74,7 +64,7 @@ export const Philosophy: React.FC = () => {
         }
       );
 
-      // Steps reveal with enhanced scroll lock effect
+      // Steps reveal
       gsap.fromTo(
         '.philosophy-step',
         { x: -40, opacity: 0 },
@@ -90,24 +80,6 @@ export const Philosophy: React.FC = () => {
           },
         }
       );
-
-      // Progressive fade-in for each step as user scrolls
-      document.querySelectorAll('.philosophy-step').forEach((step, index) => {
-        gsap.fromTo(
-          step,
-          { opacity: 0.3, scale: 0.98 },
-          {
-            opacity: 1,
-            scale: 1,
-            scrollTrigger: {
-              trigger: step,
-              start: 'top 80%',
-              end: 'top 40%',
-              scrub: 1,
-            },
-          }
-        );
-      });
 
     }, sectionRef);
 

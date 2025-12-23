@@ -10,25 +10,13 @@ export default function Home() {
   return (
     <>
       <ScrollProgress />
-      <div className="scroll-smooth">
-        <section className="scroll-snap-section">
-          <NoodleHero />
-        </section>
-        <Marquee />
-        <section className="scroll-snap-section">
-          <FeaturedProducts />
-        </section>
-        <section className="scroll-snap-section">
-          <Philosophy />
-        </section>
-        <section className="scroll-snap-section">
-          <ClassesTeaser />
-        </section>
-        <Marquee />
-        <section className="scroll-snap-section">
-          <Newsletter />
-        </section>
-      </div>
+      <NoodleHero />
+      <Marquee />
+      <FeaturedProducts />
+      <Philosophy />
+      <ClassesTeaser />
+      <Marquee />
+      <Newsletter />
     </>
   );
 }

@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui';
 
 export default function AccountPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, isEmployee } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
@@ -53,6 +53,29 @@ export default function AccountPage() {
             </div>
           </div>
         </div>
+
+        {/* Employee Dashboard Link */}
+        {isEmployee && (
+          <div className="bg-black text-white p-8 shadow-lg mb-8">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-white text-black flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-black text-white mb-2 text-lg tracking-tight">EMPLOYEE ACCESS</h3>
+                <p className="text-sm text-white/70 mb-4">Access your employee dashboard and tools</p>
+                <Link
+                  href="/dashboard"
+                  className="inline-block px-6 py-3 bg-white text-black text-xs font-bold tracking-[0.15em] uppercase hover:bg-white/90 transition-colors"
+                >
+                  Open Dashboard
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Links */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

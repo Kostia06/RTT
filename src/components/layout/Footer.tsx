@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export const Footer: React.FC = () => {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
   const footerRef = useRef<HTMLElement>(null);
   const [formData, setFormData] = useState({
@@ -17,6 +19,13 @@ export const Footer: React.FC = () => {
     message: '',
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  // Hide footer on dashboard and admin pages
+  const hideFooter = pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/');
+
+  if (hideFooter) {
+    return null;
+  }
 
   useEffect(() => {
     const ctx = gsap.context(() => {

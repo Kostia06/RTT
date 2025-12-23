@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -351,85 +352,127 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Chef Section */}
+      {/* Leadership Section */}
       <div className="py-32 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div className="relative order-2 lg:order-1">
-              <div className="aspect-[4/5] bg-black relative overflow-hidden">
-                {/* Decorative elements */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[80%] h-[80%] border border-white/10" />
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-[60%] h-[60%] border border-white/5" />
-                </div>
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-6 mb-8">
+              <div className="h-px bg-black/20 w-16" />
+              <span className="text-sm tracking-[0.3em] text-gray-500 uppercase">Leadership</span>
+              <div className="h-px bg-black/20 w-16" />
+            </div>
 
-                {/* Placeholder */}
-                <div className="absolute inset-0 flex items-center justify-center text-white">
-                  <div className="text-center">
-                    <svg className="w-32 h-32 mx-auto opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={0.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="text-xs tracking-[0.3em] uppercase text-white/40 mt-4 block">Chef Portrait</span>
-                  </div>
-                </div>
+            <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] text-black">
+              OUR
+              <br />
+              <span className="text-outline-black">FOUNDERS</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+            {/* Co-Owner and Founder */}
+            <div className="group">
+              <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden mb-8">
+                <Image
+                  src="/images/co-owner-and-founder.webp"
+                  alt="Co-Owner and Founder"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <div className="absolute inset-0 bg-black transition-opacity duration-500 opacity-0 group-hover:opacity-10" />
 
                 {/* Corner accents */}
-                <div className="absolute top-6 left-6 w-12 h-12 border-l border-t border-white/30" />
-                <div className="absolute bottom-6 right-6 w-12 h-12 border-r border-b border-white/30" />
+                <div className="absolute top-6 left-6 w-12 h-12 border-l-2 border-t-2 border-white/60" />
+                <div className="absolute bottom-6 right-6 w-12 h-12 border-r-2 border-b-2 border-white/60" />
               </div>
 
-              {/* Quote box */}
-              <div className="absolute -bottom-8 -left-8 bg-white p-8 shadow-2xl max-w-xs">
-                <span className="text-6xl font-black text-gray-100 absolute top-4 left-4">&quot;</span>
-                <p className="text-sm text-gray-600 italic relative z-10 leading-relaxed">
-                  Ramen is more than food—it&apos;s a discipline.
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-3xl font-black text-black tracking-tight">
+                    Co-Owner & Founder
+                  </h3>
+                  <p className="text-xs text-gray-500 uppercase tracking-[0.2em] mt-2">
+                    Visionary Leader
+                  </p>
+                </div>
+
+                <div className="h-px bg-black/10 w-24" />
+
+                <p className="text-base text-gray-600 leading-relaxed">
+                  Leading the vision and bringing authentic Hakata-style ramen culture to Calgary.
+                  With years of dedication to the craft, our founder ensures every bowl honors the
+                  traditional techniques passed down through generations.
                 </p>
+
+                <div className="pt-6">
+                  <blockquote className="relative pl-6 border-l-2 border-black italic text-gray-700">
+                    &quot;Ramen is more than food—it&apos;s a discipline, a tradition, and a way of life.&quot;
+                  </blockquote>
+                </div>
               </div>
             </div>
 
-            <div className="order-1 lg:order-2">
-              <div className="flex items-center gap-6 mb-8">
-                <div className="h-px bg-black/30 w-16" />
-                <span className="text-sm tracking-[0.3em] text-gray-500 uppercase">The Chef</span>
+            {/* Co-Owner */}
+            <div className="group">
+              <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden mb-8">
+                <Image
+                  src="/images/co-owner.webp"
+                  alt="Co-Owner"
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+                <div className="absolute inset-0 bg-black transition-opacity duration-500 opacity-0 group-hover:opacity-10" />
+
+                {/* Corner accents */}
+                <div className="absolute top-6 left-6 w-12 h-12 border-l-2 border-t-2 border-white/60" />
+                <div className="absolute bottom-6 right-6 w-12 h-12 border-r-2 border-b-2 border-white/60" />
               </div>
 
-              <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] text-black leading-[0.9]">
-                PASSION
-                <br />
-                MEETS
-                <br />
-                <span className="text-outline-black">PRECISION</span>
-              </h2>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-3xl font-black text-black tracking-tight">
+                    Co-Owner
+                  </h3>
+                  <p className="text-xs text-gray-500 uppercase tracking-[0.2em] mt-2">
+                    Operations Director
+                  </p>
+                </div>
 
-              <div className="mt-12 space-y-6 text-gray-600 text-lg leading-relaxed">
-                <p>
-                  Our head chef trained in Hakata, Japan, spending years mastering
-                  the techniques that make tonkotsu ramen legendary. Every bowl
-                  reflects that dedication.
+                <div className="h-px bg-black/10 w-24" />
+
+                <p className="text-base text-gray-600 leading-relaxed">
+                  Managing daily operations and ensuring every bowl meets our exacting standards
+                  of quality and authenticity. With meticulous attention to detail, our co-owner
+                  maintains the consistency that makes each visit memorable.
                 </p>
-                <p>
-                  &quot;Every element must be perfect. The broth, the noodles, the toppings,
-                  the timing. When everything comes together, that&apos;s when the magic happens.&quot;
-                </p>
+
+                <div className="pt-6">
+                  <blockquote className="relative pl-6 border-l-2 border-black italic text-gray-700">
+                    &quot;Every element must be perfect. When everything comes together, that&apos;s when the magic happens.&quot;
+                  </blockquote>
+                </div>
               </div>
-
-              <Link
-                href="/classes"
-                className="mt-12 inline-flex items-center gap-4 group"
-              >
-                <span className="relative px-8 py-4 bg-black text-white text-sm tracking-[0.2em] uppercase font-bold overflow-hidden">
-                  <span className="relative z-10">Learn from the Chef</span>
-                  <span className="absolute inset-0 bg-gray-800 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                </span>
-                <span className="w-12 h-12 border border-black flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </span>
-              </Link>
             </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-20 text-center">
+            <Link
+              href="/classes"
+              className="inline-flex items-center gap-4 group"
+            >
+              <span className="relative px-8 py-4 bg-black text-white text-sm tracking-[0.2em] uppercase font-bold overflow-hidden">
+                <span className="relative z-10">Learn from Our Team</span>
+                <span className="absolute inset-0 bg-gray-800 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              </span>
+              <span className="w-12 h-12 border border-black flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </span>
+            </Link>
           </div>
         </div>
       </div>

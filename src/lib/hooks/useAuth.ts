@@ -33,5 +33,7 @@ export const useAuth = () => {
     user,
     isAuthenticated: !!user,
     isLoading,
+    isEmployee: user?.user_metadata?.role === 'employee' || user?.user_metadata?.role === 'admin',
+    isAdmin: user?.user_metadata?.role === 'admin',
   };
 };

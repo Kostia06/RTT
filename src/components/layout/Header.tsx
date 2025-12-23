@@ -12,7 +12,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 export const Header: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isEmployee } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -21,9 +21,9 @@ export const Header: React.FC = () => {
   const logoRef = useRef<HTMLDivElement>(null);
 
   // Pages with dark hero sections that should have transparent navbar initially
-  const darkHeroPages = ['/', '/shop', '/classes', '/login', '/register', '/about', '/employees'];
+  const darkHeroPages = ['/', '/shop', '/classes', '/login', '/register', '/about'];
   const hasDarkHero = darkHeroPages.some(page =>
-    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/classes/')
+    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/classes/') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/')
   );
 
   useEffect(() => {
@@ -91,13 +91,21 @@ export const Header: React.FC = () => {
     window.location.href = '/';
   };
 
-  const navLinks = [
+  const baseNavLinks = [
     { href: '/shop', label: 'Shop' },
     { href: '/classes', label: 'Classes' },
     { href: '/about', label: 'About' },
-    { href: '/employees', label: 'Team' },
     { href: '#contact', label: 'Contact' },
   ];
+
+  // Add employee dashboard link if user is an employee
+  const navLinks = isEmployee
+    ? [
+        ...baseNavLinks.slice(0, 3), // Shop, Classes, About
+        { href: '/dashboard', label: 'Dashboard' },
+        baseNavLinks[3], // Contact
+      ]
+    : baseNavLinks;
 
   return (
     <header

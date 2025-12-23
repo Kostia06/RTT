@@ -59,24 +59,24 @@ export const Header: React.FC = () => {
         },
       });
 
-      // Hide header on scroll down, show on scroll up
+      // Hide header on scroll down, show on scroll up - faster animation
       let lastScroll = 0;
       ScrollTrigger.create({
         onUpdate: (self) => {
           const currentScroll = self.scroll();
           if (currentScroll > 100) {
             if (currentScroll > lastScroll && !mobileMenuOpen) {
-              // Scrolling down
+              // Scrolling down - faster hide
               gsap.to(headerRef.current, {
                 y: -100,
-                duration: 0.3,
-                ease: 'power2.out',
+                duration: 0.15,
+                ease: 'power2.in',
               });
             } else {
-              // Scrolling up
+              // Scrolling up - faster show
               gsap.to(headerRef.current, {
                 y: 0,
-                duration: 0.3,
+                duration: 0.15,
                 ease: 'power2.out',
               });
             }
@@ -120,41 +120,41 @@ export const Header: React.FC = () => {
   return (
     <header
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-white shadow-[0_1px_0_rgba(0,0,0,0.1)]'
+          ? 'bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.06)] border-b border-black/5'
           : 'bg-transparent'
       }`}
     >
-      {/* Top accent line */}
-      <div className={`h-[2px] bg-gradient-to-r from-transparent via-white/50 to-transparent transition-opacity duration-500 ${scrolled ? 'opacity-0' : 'opacity-100'}`} />
-
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 sm:h-20">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
           <Link
             href="/"
-            className="group flex-shrink-0"
+            className="group flex-shrink-0 relative"
           >
-            <div ref={logoRef} className={`transition-colors duration-300 ${scrolled ? 'text-black' : 'text-white'}`}>
-              <span className="text-xs sm:text-sm tracking-[0.15em] uppercase font-bold block leading-tight">Respect</span>
-              <span className="text-xs sm:text-sm tracking-[0.15em] uppercase font-bold block leading-tight">The Technique</span>
+            <div ref={logoRef} className={`transition-all duration-300 ${scrolled ? 'text-black' : 'text-white'}`}>
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg sm:text-xl font-black tracking-[-0.02em] leading-none">RTT</span>
+                <div className={`h-3 w-px ${scrolled ? 'bg-black/20' : 'bg-white/30'}`} />
+                <span className="text-[10px] sm:text-xs tracking-[0.15em] uppercase font-medium opacity-70">Respect The Technique</span>
+              </div>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative px-5 py-2 text-sm font-medium tracking-[0.05em] uppercase transition-colors group ${
-                    scrolled ? 'text-gray-600 hover:text-black' : 'text-white/70 hover:text-white'
+                  className={`relative px-4 py-2 text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 group ${
+                    scrolled ? 'text-gray-700 hover:text-black' : 'text-white/80 hover:text-white'
                   }`}
                 >
-                  {link.label}
-                  <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full transition-all duration-300 group-hover:w-full group-hover:h-[2px] group-hover:rounded-none ${
+                  <span className="relative z-10">{link.label}</span>
+                  <span className={`absolute inset-x-2 bottom-1.5 h-[2px] scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center ${
                     scrolled ? 'bg-black' : 'bg-white'
                   }`} />
                 </Link>
@@ -163,76 +163,70 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Auth & Cart */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-5">
             <CartIcon scrolled={scrolled} />
 
-            <div className={`h-6 w-px ${scrolled ? 'bg-black/10' : 'bg-white/20'}`} />
+            <div className={`h-4 w-px ${scrolled ? 'bg-black/8' : 'bg-white/15'}`} />
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <Link
                   href="/account"
-                  className={`text-sm font-medium tracking-[0.05em] uppercase transition-colors ${
-                    scrolled ? 'text-gray-600 hover:text-black' : 'text-white/70 hover:text-white'
+                  className={`text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 ${
+                    scrolled ? 'text-gray-700 hover:text-black' : 'text-white/80 hover:text-white'
                   }`}
                 >
                   Account
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className={`text-sm font-medium tracking-[0.05em] uppercase transition-colors ${
-                    scrolled ? 'text-gray-400 hover:text-black' : 'text-white/50 hover:text-white'
+                  className={`text-xs font-medium tracking-[0.1em] uppercase transition-all duration-200 ${
+                    scrolled ? 'text-gray-500 hover:text-gray-900' : 'text-white/60 hover:text-white'
                   }`}
                 >
                   Exit
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <Link
                   href="/login"
-                  className={`text-sm font-medium tracking-[0.05em] uppercase transition-colors ${
-                    scrolled ? 'text-gray-600 hover:text-black' : 'text-white/70 hover:text-white'
+                  className={`text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 ${
+                    scrolled ? 'text-gray-700 hover:text-black' : 'text-white/80 hover:text-white'
                   }`}
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className={`relative px-5 py-2.5 text-sm font-bold tracking-[0.1em] uppercase overflow-hidden group ${
+                  className={`relative px-4 py-2 text-[10px] font-bold tracking-[0.15em] uppercase overflow-hidden transition-all duration-200 group ${
                     scrolled
-                      ? 'bg-black text-white'
-                      : 'border border-white text-white'
+                      ? 'bg-black text-white hover:bg-gray-900'
+                      : 'bg-white/10 backdrop-blur-sm border border-white/30 text-white hover:bg-white/20'
                   }`}
                 >
-                  <span className="relative z-10">Join</span>
-                  <span className={`absolute inset-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ${
-                    scrolled ? 'bg-gray-800' : 'bg-white'
-                  }`} />
-                  <span className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10 ${
-                    scrolled ? 'text-white' : 'text-black'
-                  }`}>
-                    Join
-                  </span>
+                  <span className="relative z-10">Join Us</span>
                 </Link>
               </div>
             )}
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-2 sm:gap-4">
+          <div className="md:hidden flex items-center gap-3">
             <CartIcon scrolled={scrolled} />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`relative w-11 h-11 flex flex-col items-center justify-center gap-1.5 transition-colors touch-manipulation ${
-                scrolled ? 'text-black' : 'text-white'
+              className={`relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 transition-all duration-200 touch-manipulation rounded ${
+                scrolled
+                  ? 'text-black hover:bg-black/5 active:bg-black/10'
+                  : 'text-white hover:bg-white/10 active:bg-white/20'
               }`}
               aria-label="Toggle menu"
               aria-expanded={mobileMenuOpen}
             >
-              <span className={`block w-6 h-0.5 bg-current transition-all duration-300 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-              <span className={`block w-6 h-0.5 bg-current transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`} />
-              <span className={`block w-6 h-0.5 bg-current transition-all duration-300 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+              <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-[5px]' : ''}`} />
+              <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? 'opacity-0 scale-0' : ''}`} />
+              <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-[5px]' : ''}`} />
             </button>
           </div>
         </div>
@@ -241,27 +235,27 @@ export const Header: React.FC = () => {
         {mobileMenuOpen && (
           <div
             ref={menuRef}
-            className="md:hidden overflow-hidden bg-white -mx-4 sm:-mx-6 px-4 sm:px-6 border-t border-gray-100"
+            className="md:hidden overflow-hidden bg-white/98 backdrop-blur-lg -mx-4 sm:-mx-6 px-4 sm:px-6 border-t border-black/5"
           >
-            <div className="py-4 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="py-3 space-y-0.5 max-h-[calc(100vh-4rem)] overflow-y-auto">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="mobile-menu-item block py-4 text-base font-semibold text-gray-900 hover:text-black active:bg-gray-50 border-b border-gray-100 transition-colors touch-manipulation"
+                  className="mobile-menu-item block px-3 py-3.5 text-sm font-bold tracking-[0.05em] uppercase text-gray-900 hover:text-black hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                 >
                   {link.label}
                 </Link>
               ))}
 
-              <div className="pt-4 space-y-2">
+              <div className="pt-3 mt-3 border-t border-black/5 space-y-0.5">
                 {isAuthenticated ? (
                   <>
                     <Link
                       href="/account"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item block py-4 text-base font-semibold text-gray-900 hover:text-black active:bg-gray-50 transition-colors touch-manipulation"
+                      className="mobile-menu-item block px-3 py-3.5 text-sm font-bold tracking-[0.05em] uppercase text-gray-900 hover:text-black hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                     >
                       Account
                     </Link>
@@ -270,26 +264,26 @@ export const Header: React.FC = () => {
                         handleSignOut();
                         setMobileMenuOpen(false);
                       }}
-                      className="mobile-menu-item block w-full text-left py-4 text-base font-semibold text-gray-500 hover:text-gray-900 active:bg-gray-50 transition-colors touch-manipulation"
+                      className="mobile-menu-item block w-full text-left px-3 py-3.5 text-sm font-bold tracking-[0.05em] uppercase text-gray-600 hover:text-gray-900 hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                     >
                       Sign Out
                     </button>
                   </>
                 ) : (
-                  <div className="mobile-menu-item flex gap-3 pt-2 pb-2">
+                  <div className="mobile-menu-item flex gap-2 pt-1 pb-2">
                     <Link
                       href="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex-1 py-4 text-center text-sm font-bold tracking-[0.1em] uppercase border-2 border-black text-black hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
+                      className="flex-1 py-3.5 text-center text-xs font-bold tracking-[0.15em] uppercase border border-black/20 text-black hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex-1 py-4 text-center text-sm font-bold tracking-[0.1em] uppercase bg-black text-white hover:bg-gray-800 active:bg-gray-900 transition-colors touch-manipulation"
+                      className="flex-1 py-3.5 text-center text-xs font-bold tracking-[0.15em] uppercase bg-black text-white hover:bg-gray-800 active:bg-gray-900 rounded transition-all duration-200 touch-manipulation"
                     >
-                      Join
+                      Join Us
                     </Link>
                   </div>
                 )}

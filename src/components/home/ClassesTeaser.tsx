@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -73,30 +74,30 @@ export const ClassesTeaser: React.FC = () => {
     <section ref={sectionRef} className="relative overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
         {/* Left - Image */}
-        <div className="classes-image-wrapper relative bg-black min-h-[50vh] lg:min-h-screen">
-          <div className="absolute inset-0 flex items-center justify-center">
-            {/* Decorative elements */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[80%] h-[80%] border border-white/10" />
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[60%] h-[60%] border border-white/10" />
-            </div>
+        <div className="classes-image-wrapper relative bg-black min-h-[50vh] lg:min-h-screen overflow-hidden">
+          {/* Workshop Photo */}
+          <Image
+            src="/images/230401-RTT-NoodleMaking-066.JPG"
+            alt="Noodle making workshop - hands-on ramen class"
+            fill
+            className="object-cover opacity-80"
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            priority
+          />
 
-            {/* Center content */}
-            <div className="relative text-center text-white z-10">
-              <span className="text-[15vw] lg:text-[8vw] font-black block leading-none tracking-[-0.04em]">
-                学ぶ
-              </span>
-              <span className="text-sm tracking-[0.3em] uppercase text-white/50 mt-4 block">
-                Learn
-              </span>
-            </div>
-          </div>
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/40" />
 
           {/* Corner decorations */}
-          <div className="absolute top-8 left-8 w-16 h-16 border-l-2 border-t-2 border-white/20" />
-          <div className="absolute bottom-8 right-8 w-16 h-16 border-r-2 border-b-2 border-white/20" />
+          <div className="absolute top-8 left-8 w-16 h-16 border-l-2 border-t-2 border-white/40 z-10" />
+          <div className="absolute bottom-8 right-8 w-16 h-16 border-r-2 border-b-2 border-white/40 z-10" />
+
+          {/* Bottom badge */}
+          <div className="absolute bottom-8 left-8 z-10">
+            <div className="bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-2">
+              <span className="text-white text-xs tracking-[0.3em] uppercase">Live Workshop</span>
+            </div>
+          </div>
         </div>
 
         {/* Right - Content */}

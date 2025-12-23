@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -27,6 +28,19 @@ export const Philosophy: React.FC = () => {
           },
         }
       );
+
+      // Bowl image parallax
+      gsap.to('.philosophy-bowl-image', {
+        y: -80,
+        rotation: 5,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: 1,
+        },
+      });
 
       // Counter animation
       gsap.fromTo(
@@ -93,6 +107,17 @@ export const Philosophy: React.FC = () => {
         <span className="horizontal-text text-[20vw] font-black text-white/[0.02] tracking-[-0.04em]">
           PATIENCE • TECHNIQUE • TRADITION • PATIENCE • TECHNIQUE • TRADITION •
         </span>
+      </div>
+
+      {/* Floating bowl image */}
+      <div className="philosophy-bowl-image absolute top-[10%] right-[5%] w-[400px] h-[400px] lg:w-[500px] lg:h-[500px] opacity-20 pointer-events-none hidden lg:block">
+        <Image
+          src="/images/Rayo.jpg"
+          alt="Authentic ramen bowl"
+          fill
+          className="object-contain"
+          sizes="500px"
+        />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">

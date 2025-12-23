@@ -4,6 +4,7 @@ import { Marquee } from '@/components/home/Marquee';
 import { FeaturedProducts } from '@/components/home/FeaturedProducts';
 import { Philosophy } from '@/components/home/Philosophy';
 import { ClassesTeaser } from '@/components/home/ClassesTeaser';
+import { WorkshopGallery } from '@/components/home/WorkshopGallery';
 import { Newsletter } from '@/components/home/Newsletter';
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
       <FeaturedProducts />
       <Philosophy />
       <ClassesTeaser />
+      <WorkshopGallery />
       <Marquee />
       <Newsletter />
     </>

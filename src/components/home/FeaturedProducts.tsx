@@ -82,19 +82,70 @@ export const FeaturedProducts: React.FC = () => {
         }
       );
 
-      // Hover animations
-      document.querySelectorAll('.product-card').forEach((card) => {
+      // Parallax and hover animations
+      document.querySelectorAll('.product-card').forEach((card, index) => {
         const image = card.querySelector('.product-image');
         const overlay = card.querySelector('.product-overlay');
+        const numberElement = card.querySelector('.product-number');
 
+        // Image parallax effect
+        if (image) {
+          gsap.to(image, {
+            y: -25,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: card,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: 1,
+            },
+          });
+        }
+
+        // Number rotation on scroll
+        if (numberElement) {
+          gsap.fromTo(
+            numberElement,
+            { rotation: -20, opacity: 0.2 },
+            {
+              rotation: 0,
+              opacity: 0.3,
+              scrollTrigger: {
+                trigger: card,
+                start: 'top 80%',
+                end: 'top 40%',
+                scrub: 1,
+              },
+            }
+          );
+        }
+
+        // Stagger scale effect
+        gsap.fromTo(
+          card,
+          { scale: 0.95 },
+          {
+            scale: 1,
+            scrollTrigger: {
+              trigger: card,
+              start: 'top 85%',
+              end: 'top 60%',
+              scrub: 1,
+            },
+          }
+        );
+
+        // Hover interactions
         card.addEventListener('mouseenter', () => {
           gsap.to(image, { scale: 1.05, duration: 0.6, ease: 'power2.out' });
           gsap.to(overlay, { opacity: 1, duration: 0.3 });
+          gsap.to(card, { y: -8, duration: 0.4, ease: 'power2.out' });
         });
 
         card.addEventListener('mouseleave', () => {
           gsap.to(image, { scale: 1, duration: 0.6, ease: 'power2.out' });
           gsap.to(overlay, { opacity: 0, duration: 0.3 });
+          gsap.to(card, { y: 0, duration: 0.4, ease: 'power2.out' });
         });
       });
 
@@ -171,7 +222,7 @@ export const FeaturedProducts: React.FC = () => {
                 </div>
 
                 {/* Index number */}
-                <div className="absolute bottom-4 left-4 text-white/30 text-6xl font-black">
+                <div className="absolute bottom-4 left-4 text-white/30 text-6xl font-black product-number">
                   {String(index + 1).padStart(2, '0')}
                 </div>
 

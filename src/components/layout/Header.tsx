@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase/client';
 import { CartIcon } from '@/components/cart/CartIcon';
 import { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export const Header: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -13,6 +16,7 @@ export const Header: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const logoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,6 +26,68 @@ export const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // Header scroll effects
+      ScrollTrigger.create({
+        start: 'top top',
+        end: 99999,
+        onUpdate: (self) => {
+          const progress = Math.min(self.progress * 2, 1);
+
+          // Background opacity fade in
+          if (headerRef.current) {
+            gsap.to(headerRef.current, {
+              backgroundColor: `rgba(255, 255, 255, ${progress})`,
+              boxShadow: `0 1px 0 rgba(0, 0, 0, ${progress * 0.1})`,
+              duration: 0.3,
+              overwrite: 'auto',
+            });
+          }
+
+          // Logo scale down slightly
+          if (logoRef.current) {
+            gsap.to(logoRef.current, {
+              scale: 1 - (progress * 0.05),
+              duration: 0.3,
+              overwrite: 'auto',
+            });
+          }
+        },
+      });
+
+      // Hide header on scroll down, show on scroll up
+      let lastScroll = 0;
+      ScrollTrigger.create({
+        onUpdate: (self) => {
+          const currentScroll = self.scroll();
+          if (currentScroll > 100) {
+            if (currentScroll > lastScroll && !mobileMenuOpen) {
+              // Scrolling down
+              gsap.to(headerRef.current, {
+                y: -100,
+                duration: 0.3,
+                ease: 'power2.out',
+              });
+            } else {
+              // Scrolling up
+              gsap.to(headerRef.current, {
+                y: 0,
+                duration: 0.3,
+                ease: 'power2.out',
+              });
+            }
+          }
+          lastScroll = currentScroll;
+        },
+      });
+    }, headerRef);
+
+    return () => ctx.revert();
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (mobileMenuOpen && menuRef.current) {
@@ -70,7 +136,7 @@ export const Header: React.FC = () => {
             href="/"
             className="group flex-shrink-0"
           >
-            <div className={`transition-colors duration-300 ${scrolled ? 'text-black' : 'text-white'}`}>
+            <div ref={logoRef} className={`transition-colors duration-300 ${scrolled ? 'text-black' : 'text-white'}`}>
               <span className="text-xs sm:text-sm tracking-[0.15em] uppercase font-bold block leading-tight">Respect</span>
               <span className="text-xs sm:text-sm tracking-[0.15em] uppercase font-bold block leading-tight">The Technique</span>
             </div>

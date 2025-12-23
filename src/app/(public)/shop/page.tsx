@@ -26,6 +26,7 @@ function ShopContent() {
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const filterBarRef = useRef<HTMLDivElement>(null);
   const { addToCart } = useCart();
 
   const categoryFromUrl = searchParams.get('category') || '';
@@ -88,6 +89,26 @@ function ShopContent() {
           scrub: 1,
         },
       });
+
+      // Enhanced filter bar scroll effects
+      if (filterBarRef.current) {
+        ScrollTrigger.create({
+          trigger: heroRef.current,
+          start: 'bottom top',
+          end: 99999,
+          onUpdate: (self) => {
+            const progress = Math.min(self.progress * 2, 1);
+            if (filterBarRef.current) {
+              gsap.to(filterBarRef.current, {
+                backdropFilter: `blur(${10 + progress * 10}px)`,
+                boxShadow: `0 1px 0 rgba(0, 0, 0, ${progress * 0.1})`,
+                duration: 0.3,
+                overwrite: 'auto',
+              });
+            }
+          },
+        });
+      }
     }, heroRef);
 
     return () => ctx.revert();
@@ -97,6 +118,7 @@ function ShopContent() {
     if (loading || products.length === 0 || !gridRef.current) return;
 
     const ctx = gsap.context(() => {
+      // Stagger animation for initial product reveal
       gsap.fromTo(
         '.product-item',
         { y: 60, opacity: 0 },
@@ -112,6 +134,58 @@ function ShopContent() {
           },
         }
       );
+
+      // Individual product image parallax
+      document.querySelectorAll('.product-item').forEach((item, index) => {
+        const image = item.querySelector('.product-image-container');
+        if (image) {
+          gsap.to(image, {
+            y: -30,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: item,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: 1,
+            },
+          });
+        }
+
+        // Scale effect on each product as it comes into view
+        gsap.fromTo(
+          item,
+          { scale: 0.95, opacity: 0.8 },
+          {
+            scale: 1,
+            opacity: 1,
+            scrollTrigger: {
+              trigger: item,
+              start: 'top 85%',
+              end: 'top 60%',
+              scrub: 1,
+            },
+          }
+        );
+
+        // Rotate effect for product numbers
+        const numberElement = item.querySelector('.product-number');
+        if (numberElement) {
+          gsap.fromTo(
+            numberElement,
+            { rotation: -15, opacity: 0 },
+            {
+              rotation: 0,
+              opacity: 1,
+              scrollTrigger: {
+                trigger: item,
+                start: 'top 80%',
+                end: 'top 50%',
+                scrub: 1,
+              },
+            }
+          );
+        }
+      });
     }, gridRef);
 
     return () => ctx.revert();
@@ -183,7 +257,7 @@ function ShopContent() {
       </div>
 
       {/* Category Filter */}
-      <div className="sticky top-16 sm:top-20 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+      <div ref={filterBarRef} className="sticky top-16 sm:top-20 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-100 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4 sm:py-6 gap-4">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1 -mx-4 px-4 sm:mx-0 sm:px-0">
@@ -260,22 +334,24 @@ function ShopContent() {
                   <Link href={`/shop/${product.slug}`} className="block touch-manipulation active:opacity-80 transition-opacity">
                     {/* Image container */}
                     <div className="relative aspect-[4/5] overflow-hidden">
-                      {product.images?.[0] ? (
-                        <Image
-                          src={product.images[0].url}
-                          alt={product.images[0].alt}
-                          fill
-                          className="object-cover transition-transform duration-700 group-hover:scale-105 group-active:scale-105"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                          <span className="text-5xl sm:text-6xl text-gray-200">麺</span>
-                        </div>
-                      )}
+                      <div className="product-image-container absolute inset-0">
+                        {product.images?.[0] ? (
+                          <Image
+                            src={product.images[0].url}
+                            alt={product.images[0].alt}
+                            fill
+                            className="object-cover transition-transform duration-700 group-hover:scale-105 group-active:scale-105"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+                            <span className="text-5xl sm:text-6xl text-gray-200">麺</span>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Overlay on hover - hidden on mobile */}
-                      <div className={`hidden sm:flex absolute inset-0 bg-black/40 items-center justify-center transition-opacity duration-300 ${
+                      <div className={`hidden sm:flex absolute inset-0 bg-black/40 items-center justify-center transition-opacity duration-300 z-10 ${
                         hoveredProduct === product.id ? 'opacity-100' : 'opacity-0'
                       }`}>
                         <span className="px-6 sm:px-8 py-2.5 sm:py-3 border border-white text-white text-xs sm:text-sm tracking-[0.2em] uppercase">
@@ -284,8 +360,8 @@ function ShopContent() {
                       </div>
 
                       {/* Index number */}
-                      <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4">
-                        <span className="text-4xl sm:text-5xl md:text-6xl font-black text-white/20">
+                      <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-10">
+                        <span className="product-number text-4xl sm:text-5xl md:text-6xl font-black text-white/20">
                           {String(index + 1).padStart(2, '0')}
                         </span>
                       </div>

@@ -52,6 +52,16 @@
   [class*="bg-black"] ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.4);
   }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer components {
@@ -89,6 +99,12 @@
   .text-outline-black {
     -webkit-text-stroke: 2px black;
     color: transparent;
+  }
+
+  /* Scroll snap sections - smooth scroll locking */
+  .scroll-snap-section {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
   }
 
   /* Fade in animation */

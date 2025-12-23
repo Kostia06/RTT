@@ -393,9 +393,22 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="mt-10 sm:mt-12 md:mt-16 pt-6 sm:pt-8 border-t border-white/10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-            <p className="text-white/30 text-xs tracking-[0.1em] text-center md:text-left">
-              &copy; {currentYear} RESPECT THE TECHNIQUE. ALL RIGHTS RESERVED.
-            </p>
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <p className="text-white/30 text-xs tracking-[0.1em] text-center md:text-left">
+                &copy; {currentYear} RESPECT THE TECHNIQUE. ALL RIGHTS RESERVED.
+              </p>
+              <p className="text-white/20 text-xs">
+                Created by{' '}
+                <a
+                  href="https://github.com/Kostia06"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/40 hover:text-white/60 transition-colors underline underline-offset-2"
+                >
+                  Kostia
+                </a>
+              </p>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               <span className="text-xs text-white/20 tracking-[0.15em] uppercase">Made with patience</span>

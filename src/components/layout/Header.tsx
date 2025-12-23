@@ -48,36 +48,10 @@ export const Header: React.FC = () => {
           }
         },
       });
-
-      // Hide header on scroll down, show on scroll up - faster animation
-      let lastScroll = 0;
-      ScrollTrigger.create({
-        onUpdate: (self) => {
-          const currentScroll = self.scroll();
-          if (currentScroll > 100) {
-            if (currentScroll > lastScroll && !mobileMenuOpen) {
-              // Scrolling down - faster hide
-              gsap.to(headerRef.current, {
-                y: -100,
-                duration: 0.15,
-                ease: 'power2.in',
-              });
-            } else {
-              // Scrolling up - faster show
-              gsap.to(headerRef.current, {
-                y: 0,
-                duration: 0.15,
-                ease: 'power2.out',
-              });
-            }
-          }
-          lastScroll = currentScroll;
-        },
-      });
     }, headerRef);
 
     return () => ctx.revert();
-  }, [mobileMenuOpen]);
+  }, []);
 
   useEffect(() => {
     if (mobileMenuOpen && menuRef.current) {

@@ -13,7 +13,7 @@ export const CartIcon: React.FC<CartIconProps> = ({ scrolled = true }) => {
     <button
       onClick={toggleCart}
       className={`relative group transition-colors duration-300 ${
-        scrolled ? 'text-gray-700 hover:text-black' : 'text-white/80 hover:text-white'
+        scrolled ? 'text-black hover:text-gray-700' : 'text-white/90 hover:text-white'
       }`}
       aria-label="Open cart"
     >
@@ -29,12 +29,12 @@ export const CartIcon: React.FC<CartIconProps> = ({ scrolled = true }) => {
 
         {/* Hover ring effect */}
         <span className={`absolute inset-0 -m-1 border rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-          scrolled ? 'border-black/20' : 'border-white/30'
+          scrolled ? 'border-black/30' : 'border-white/40'
         }`} />
       </div>
 
       {itemCount > 0 && (
-        <span className={`absolute -top-2 -right-2 text-xs font-bold w-5 h-5 flex items-center justify-center transition-colors duration-300 ${
+        <span className={`absolute -top-2 -right-2 text-xs font-bold w-5 h-5 flex items-center justify-center transition-colors duration-300 rounded-full ${
           scrolled
             ? 'bg-black text-white'
             : 'bg-white text-black'

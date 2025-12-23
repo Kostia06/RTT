@@ -20,8 +20,11 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > 20);
     };
+
+    // Check initial scroll position
+    handleScroll();
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -86,8 +89,8 @@ export const Header: React.FC = () => {
       ref={headerRef}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'shadow-[0_1px_0_rgba(0,0,0,0.06)] border-b border-black/5'
-          : ''
+          ? 'bg-white shadow-lg border-b border-black/10'
+          : 'bg-transparent'
       }`}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -114,7 +117,7 @@ export const Header: React.FC = () => {
                   key={link.href}
                   href={link.href}
                   className={`relative px-4 py-2 text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 group ${
-                    scrolled ? 'text-gray-700 hover:text-black' : 'text-white/80 hover:text-white'
+                    scrolled ? 'text-black hover:text-gray-700' : 'text-white/90 hover:text-white'
                   }`}
                 >
                   <span className="relative z-10">{link.label}</span>
@@ -130,14 +133,14 @@ export const Header: React.FC = () => {
           <div className="hidden md:flex items-center gap-5">
             <CartIcon scrolled={scrolled} />
 
-            <div className={`h-4 w-px ${scrolled ? 'bg-black/8' : 'bg-white/15'}`} />
+            <div className={`h-4 w-px ${scrolled ? 'bg-black/20' : 'bg-white/20'}`} />
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <Link
                   href="/account"
                   className={`text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 ${
-                    scrolled ? 'text-gray-700 hover:text-black' : 'text-white/80 hover:text-white'
+                    scrolled ? 'text-black hover:text-gray-700' : 'text-white/90 hover:text-white'
                   }`}
                 >
                   Account
@@ -145,7 +148,7 @@ export const Header: React.FC = () => {
                 <button
                   onClick={handleSignOut}
                   className={`text-xs font-medium tracking-[0.1em] uppercase transition-all duration-200 ${
-                    scrolled ? 'text-gray-500 hover:text-gray-900' : 'text-white/60 hover:text-white'
+                    scrolled ? 'text-gray-600 hover:text-black' : 'text-white/70 hover:text-white'
                   }`}
                 >
                   Exit
@@ -156,7 +159,7 @@ export const Header: React.FC = () => {
                 <Link
                   href="/login"
                   className={`text-xs font-semibold tracking-[0.1em] uppercase transition-all duration-200 ${
-                    scrolled ? 'text-gray-700 hover:text-black' : 'text-white/80 hover:text-white'
+                    scrolled ? 'text-black hover:text-gray-700' : 'text-white/90 hover:text-white'
                   }`}
                 >
                   Sign In

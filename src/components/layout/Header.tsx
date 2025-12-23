@@ -31,7 +31,7 @@ export const Header: React.FC = () => {
     if (!headerRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Header scroll effects
+      // Subtle logo scale on scroll
       ScrollTrigger.create({
         start: 'top top',
         end: 99999,
@@ -48,45 +48,10 @@ export const Header: React.FC = () => {
           }
         },
       });
-
-      // Smooth fade + slide animation on scroll
-      let lastScroll = 0;
-      ScrollTrigger.create({
-        onUpdate: (self) => {
-          const currentScroll = self.scroll();
-          if (currentScroll > 100) {
-            if (currentScroll > lastScroll && !mobileMenuOpen) {
-              // Scrolling down - fade out + slide up
-              gsap.to(headerRef.current, {
-                y: -20,
-                opacity: 0,
-                duration: 0.25,
-                ease: 'power1.inOut',
-              });
-            } else {
-              // Scrolling up - fade in + slide down
-              gsap.to(headerRef.current, {
-                y: 0,
-                opacity: 1,
-                duration: 0.3,
-                ease: 'power2.out',
-              });
-            }
-          } else {
-            // At top - ensure visible
-            gsap.to(headerRef.current, {
-              y: 0,
-              opacity: 1,
-              duration: 0.2,
-            });
-          }
-          lastScroll = currentScroll;
-        },
-      });
     }, headerRef);
 
     return () => ctx.revert();
-  }, [mobileMenuOpen]);
+  }, []);
 
   useEffect(() => {
     if (mobileMenuOpen && menuRef.current) {

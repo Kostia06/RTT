@@ -1,13 +1,37 @@
 // Product Categories
-export type ProductCategory = 'Ramen Kits' | 'Broths' | 'Noodles' | 'Toppings' | 'Merchandise';
+// product-category.ts
+export type ProductCategory =
+  | 'ramen-bowl'
+  | 'retail-product'
+  | 'merchandise';
+
+export type SpiceLevel = 'mild' | 'medium' | 'hot' | 'extra-hot';
+
+
 
 export const PRODUCT_CATEGORIES: ProductCategory[] = [
-  'Ramen Kits',
-  'Broths',
-  'Noodles',
-  'Toppings',
-  'Merchandise',
+  'ramen-bowl',
+  'retail-product',
+  'merchandise',
 ];
+
+
+
+// product.ts
+export type InventoryData = {
+  productId: string;
+  quantity: number;
+  location?: string;
+};
+
+
+export type ProductVariantOptions = {
+  color?: string;
+  size?: string;
+  [key: string]: any;
+};
+
+export type ProductSize = 'small' | 'medium' | 'large';
 
 // Product Image
 export interface ProductImage {

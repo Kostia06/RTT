@@ -36,18 +36,3 @@ export type {
   IOrder,
 } from './order';
 
-// Class types
-export type {
-  ClassType,
-  ClassScheduleStatus,
-  RegistrationStatus,
-  RegistrationPaymentStatus,
-  ClassInstructor,
-  ClassSchedule,
-  ClassImage,
-  IClass,
-  ClassRegistrationStudent,
-  ClassRegistrationPayment,
-  ClassRegistrationCheckIn,
-  IClassRegistration,
-} from './class';

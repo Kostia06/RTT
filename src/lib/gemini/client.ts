@@ -15,11 +15,13 @@ export interface FileData {
   data: string; // base64
 }
 
+type Part = 
+  | { text: string }  // TextPart
+  | { inlineData: FileData }; // InlineDataPart
+
 export async function generateContent(prompt: string, images?: FileData[]) {
   try {
-    const parts: Array<{ text?: string; inlineData?: FileData }> = [
-      { text: prompt },
-    ];
+    const parts: Part[] = [{ text: prompt }];
 
     if (images && images.length > 0) {
       images.forEach((image) => {
@@ -42,9 +44,7 @@ export async function generateContentWithFunctions(
   images?: FileData[]
 ) {
   try {
-    const parts: Array<{ text?: string; inlineData?: FileData }> = [
-      { text: prompt },
-    ];
+    const parts: Part[] = [{ text: prompt }];
 
     if (images && images.length > 0) {
       images.forEach((image) => {

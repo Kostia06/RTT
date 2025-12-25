@@ -169,11 +169,11 @@ export const FeaturedProducts: React.FC = () => {
   const title = 'FEATURED';
 
   return (
-    <section ref={sectionRef} className="py-32 bg-white relative overflow-hidden">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white relative overflow-hidden">
       {/* Background accent */}
       <div className="absolute top-0 right-0 w-1/3 h-full bg-gray-50 -skew-x-12 origin-top-right" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
         {/* Section header */}
         <div className="mb-20">
           <div className="flex items-center gap-8 mb-6">

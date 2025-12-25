@@ -91,7 +91,7 @@ export const WorkshopGallery: React.FC = () => {
   const title = 'BEHIND THE SCENES';
 
   return (
-    <section ref={sectionRef} className="py-32 bg-white relative overflow-hidden">
+    <section ref={sectionRef} className="py-32 bg-white text-black relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-20 text-center">
@@ -136,7 +136,7 @@ export const WorkshopGallery: React.FC = () => {
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300" />
 
               {/* Number */}
-              <div className="absolute bottom-4 left-4 text-white/30 group-hover:text-white/60 text-5xl font-black transition-colors duration-300">
+              <div className="absolute bottom-4 left-4 text-white/40 group-hover:text-white/80 text-5xl font-black transition-colors duration-300">
                 {String(index + 1).padStart(2, '0')}
               </div>
             </div>
@@ -146,8 +146,8 @@ export const WorkshopGallery: React.FC = () => {
         {/* CTA */}
         <div className="mt-16 text-center">
           <Link
-            href="/classes"
-            className="inline-flex items-center gap-4 px-8 py-4 bg-black text-white text-sm tracking-[0.2em] uppercase font-bold hover:bg-gray-800 transition-colors group"
+            href="/workshops"
+            className="inline-flex items-center gap-4 px-8 py-4 bg-black text-white text-sm tracking-[0.2em] uppercase font-bold hover:bg-gray-900 transition-colors group"
           >
             <span>Join A Workshop</span>
             <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

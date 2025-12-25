@@ -44,7 +44,7 @@ export const Newsletter: React.FC = () => {
   };
 
   return (
-    <section ref={sectionRef} className="py-32 bg-gray-50 relative overflow-hidden">
+    <section ref={sectionRef} className="py-32 bg-white relative overflow-hidden">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-[0.02]"
         style={{

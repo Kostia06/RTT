@@ -1,71 +1,88 @@
-export type ProductCategory = 'ramen-bowl' | 'retail-product' | 'merchandise' | 'ingredient';
+// Product Categories
+export type ProductCategory = 'Ramen Kits' | 'Broths' | 'Noodles' | 'Toppings' | 'Merchandise';
 
-export type SpiceLevel = 'mild' | 'medium' | 'hot' | 'extra-hot';
-export type ProductSize = 'regular' | 'large';
+export const PRODUCT_CATEGORIES: ProductCategory[] = [
+  'Ramen Kits',
+  'Broths',
+  'Noodles',
+  'Toppings',
+  'Merchandise',
+];
 
+// Product Image
 export interface ProductImage {
-  id?: string;
-  product_id?: string;
   url: string;
   alt: string;
-  is_primary: boolean;
-  sort_order?: number;
+  isPrimary?: boolean;
 }
 
-export interface ProductVariantOptions {
-  spiceLevel?: SpiceLevel;
-  size?: ProductSize;
-  [key: string]: string | undefined;
-}
-
-export interface ProductVariant {
-  id?: string;
-  product_id?: string;
-  name: string;
-  sku: string;
-  price: number;
-  stock: number;
-  options: ProductVariantOptions;
-  created_at?: string;
-}
-
+// Nutritional Info (stored as JSONB)
 export interface NutritionalInfo {
-  id?: string;
-  product_id?: string;
   calories?: number;
   protein?: number;
   carbs?: number;
   fat?: number;
   sodium?: number;
+  [key: string]: number | undefined;
 }
 
-export interface InventoryData {
-  id?: string;
-  product_id?: string;
-  track_inventory: boolean;
-  current_stock: number;
-  low_stock_threshold: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface IProduct {
+// Main Product Interface (matches Supabase schema)
+export interface Product {
   id: string;
   name: string;
   slug: string;
-  description: string;
-  short_description?: string;
+  sku: string;
+  description?: string;
   category: ProductCategory;
-  price: number;
-  compare_at_price?: number;
-  images?: ProductImage[];
-  variants?: ProductVariant[];
+  images: ProductImage[];
+
+  // Pricing
+  price_regular: number;
+  price_bulk?: number;
+  price_cost?: number;
+
+  // Inventory
+  stock: number;
+  unit: string;
+  low_stock_threshold: number;
+
+  // Additional info
+  supplier?: string;
+  expiry_date?: string;
   nutritional_info?: NutritionalInfo;
-  meta_title?: string;
-  meta_description?: string;
-  is_active: boolean;
-  is_featured: boolean;
-  inventory_data?: InventoryData;
+  cooking_instructions?: string;
+
+  // Status
+  active: boolean;
+  featured: boolean;
+
+  // Storage locations (array of UUIDs)
+  storage_locations?: string[];
+
   created_at: string;
   updated_at: string;
+}
+
+// Product Variant
+export interface ProductVariant {
+  sku: string;
+  name: string;
+  price: number;
+  stock?: number;
+  options?: Record<string, string>;
+}
+
+// Legacy compatibility (for existing code)
+export interface IProduct extends Product {
+  price: number;
+  is_active: boolean;
+  is_featured: boolean;
+  variants?: ProductVariant[];
+}
+
+// Cart Item
+export interface CartItem {
+  product: Product;
+  quantity: number;
+  price: number; // Price at time of adding to cart
 }

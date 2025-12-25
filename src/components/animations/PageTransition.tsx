@@ -44,7 +44,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
       <div
         ref={overlayRef}
         className="fixed inset-0 bg-black z-[100] pointer-events-none"
-        style={{ scaleY: 0 }}
+        style={{ transform: 'scaleY(0)', transformOrigin: 'top' }}
       />
 
       {/* Content */}

@@ -242,7 +242,7 @@ export const FeaturedProducts: React.FC = () => {
                   {product.name}
                 </h3>
                 <p className="text-2xl font-black text-black">
-                  ${product.price.toFixed(2)}
+                  ${product.price_regular.toFixed(2)}
                 </p>
               </div>
             </Link>

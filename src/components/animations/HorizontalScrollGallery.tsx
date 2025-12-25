@@ -62,20 +62,27 @@ export const HorizontalScrollGallery: React.FC<HorizontalScrollGalleryProps> = (
       }
 
       // Stagger animate items as they scroll into view
-      gsap.utils.toArray<HTMLElement>('.horizontal-scroll-item').forEach((item, index) => {
+      const containerAnim = ScrollTrigger.getById('horizontal-scroll');
+      gsap.utils.toArray<HTMLElement>('.horizontal-scroll-item').forEach((item) => {
+        const scrollTriggerConfig: gsap.TweenVars['scrollTrigger'] = {
+          trigger: item,
+          start: 'left 90%',
+          end: 'left 50%',
+          scrub: 1,
+        };
+
+        // Only add containerAnimation if it exists
+        if (containerAnim) {
+          (scrollTriggerConfig as any).containerAnimation = containerAnim;
+        }
+
         gsap.fromTo(
           item,
           { opacity: 0.6, scale: 0.95 },
           {
             opacity: 1,
             scale: 1,
-            scrollTrigger: {
-              trigger: item,
-              containerAnimation: ScrollTrigger.getById('horizontal-scroll'),
-              start: 'left 90%',
-              end: 'left 50%',
-              scrub: 1,
-            },
+            scrollTrigger: scrollTriggerConfig,
           }
         );
       });

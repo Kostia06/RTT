@@ -6,7 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 
 export const metadata: Metadata = {
-  title: 'Respect the Technique - Authentic Hakata Ramen',
+  title: 'Respect the Technique',
   description: 'Discover authentic Hakata-style ramen, handcrafted with 18 hours of patience. Shop ramen kits, take classes, and master the technique.',
   keywords: ['ramen', 'hakata', 'tonkotsu', 'calgary', 'japanese food', 'ramen classes'],
   openGraph: {

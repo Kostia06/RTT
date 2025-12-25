@@ -330,7 +330,7 @@ export default function AboutPage() {
             {[
               { num: '01', title: 'AUTHENTICITY', kanji: '本物', desc: 'We don\'t take shortcuts or make compromises. Every bowl follows traditional Hakata methods passed down through generations.' },
               { num: '02', title: 'PATIENCE', kanji: '忍耐', desc: 'Great ramen cannot be rushed. From 18-hour broths to carefully timed noodles, we give each element the time it deserves.' },
-              { num: '03', title: 'EDUCATION', kanji: '教育', desc: 'We believe in sharing our knowledge. Through classes and products, we help others discover the art of authentic ramen.' },
+              { num: '03', title: 'EDUCATION', kanji: '教育', desc: 'We believe in sharing our knowledge. Through recipes and products, we help others discover the art of authentic ramen.' },
             ].map((value, i) => (
               <div key={i} className="value-card bg-gray-50 p-10 group hover:bg-black hover:text-white transition-all duration-500">
                 <div className="flex items-start justify-between mb-8">
@@ -460,11 +460,11 @@ export default function AboutPage() {
           {/* CTA */}
           <div className="mt-20 text-center">
             <Link
-              href="/classes"
+              href="/recipes"
               className="inline-flex items-center gap-4 group"
             >
               <span className="relative px-8 py-4 bg-black text-white text-sm tracking-[0.2em] uppercase font-bold overflow-hidden">
-                <span className="relative z-10">Learn from Our Team</span>
+                <span className="relative z-10">Explore Our Recipes</span>
                 <span className="absolute inset-0 bg-gray-800 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               </span>
               <span className="w-12 h-12 border border-black flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">

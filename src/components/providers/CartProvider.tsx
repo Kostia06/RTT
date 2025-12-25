@@ -123,7 +123,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [state.items]);
 
   const addToCart = (product: IProduct, variant?: ProductVariant, quantity = 1) => {
-    const primaryImage = product.images?.find((img) => img.is_primary) || product.images?.[0];
+    const primaryImage = product.images?.find((img) => img.isPrimary) || product.images?.[0];
 
     const item: CartItem = {
       id: `${product.id}-${variant?.sku || 'default'}`,
@@ -132,7 +132,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       productSlug: product.slug,
       variantId: variant?.sku,
       variantName: variant?.name,
-      price: variant?.price || product.price,
+      price: variant?.price || product.price_regular,
       quantity,
       image: primaryImage?.url,
     };

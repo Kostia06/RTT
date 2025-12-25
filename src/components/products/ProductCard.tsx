@@ -18,10 +18,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
 
-  const primaryImage = product.images?.find((img) => img.is_primary) || product.images?.[0];
-  const hasDiscount = product.compare_at_price && product.compare_at_price > product.price;
+  const primaryImage = product.images?.find((img) => img.isPrimary) || product.images?.[0];
+  const hasDiscount = product.price_bulk && product.price_regular > product.price_bulk;
   const discountPercentage = hasDiscount
-    ? Math.round(((product.compare_at_price! - product.price) / product.compare_at_price!) * 100)
+    ? Math.round(((product.price_regular - product.price_bulk!) / product.price_regular) * 100)
     : 0;
 
   useEffect(() => {
@@ -100,19 +100,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {product.name}
           </h3>
 
-          {product.short_description && (
+          {product.description && (
             <p className="text-xs sm:text-sm text-gray-600 line-clamp-2 mb-2">
-              {product.short_description}
+              {product.description}
             </p>
           )}
 
           <div className="flex items-baseline gap-2">
             <span className="text-base sm:text-lg font-bold text-black">
-              ${product.price.toFixed(2)}
+              ${(hasDiscount ? product.price_bulk! : product.price_regular).toFixed(2)}
             </span>
             {hasDiscount && (
               <span className="text-xs sm:text-sm text-gray-400 line-through">
-                ${product.compare_at_price!.toFixed(2)}
+                ${product.price_regular.toFixed(2)}
               </span>
             )}
           </div>

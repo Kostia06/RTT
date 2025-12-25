@@ -41,10 +41,10 @@ export async function generateMetadata({
 
   return {
     title: `${product.name} | Respect the Technique`,
-    description: product.short_description || product.description,
+    description: product.description,
     openGraph: {
       title: product.name,
-      description: product.short_description || product.description,
+      description: product.description,
       images: product.images?.map((img) => ({
         url: img.url,
         alt: img.alt,

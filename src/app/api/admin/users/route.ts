@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -25,7 +25,7 @@ export async function GET() {
     }
 
     // Get service role client to access all users
-    const serviceSupabase = await createClient();
+    const serviceSupabase = await createServiceClient();
 
     // Fetch all users from auth.users
     const { data: { users }, error: usersError } = await serviceSupabase.auth.admin.listUsers();
@@ -45,8 +45,8 @@ export async function GET() {
       name: u.user_metadata?.name || 'N/A',
       role: u.user_metadata?.role || 'customer',
       created_at: u.created_at,
-      banned: u.banned_until ? new Date(u.banned_until) > new Date() : false,
-      banned_until: u.banned_until,
+      banned: false, // TODO: Implement banned_until field in user metadata
+      banned_until: null,
       last_sign_in_at: u.last_sign_in_at,
     }));
 

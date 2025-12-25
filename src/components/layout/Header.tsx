@@ -21,9 +21,9 @@ export const Header: React.FC = () => {
   const logoRef = useRef<HTMLDivElement>(null);
 
   // Pages with dark hero sections that should have transparent navbar initially
-  const darkHeroPages = ['/', '/shop', '/classes', '/login', '/register', '/about'];
+  const darkHeroPages = ['/', '/shop', '/recipes', '/login', '/register', '/about'];
   const hasDarkHero = darkHeroPages.some(page =>
-    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/classes/') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/')
+    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/recipes/') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/')
   );
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export const Header: React.FC = () => {
 
   const baseNavLinks = [
     { href: '/shop', label: 'Shop' },
-    { href: '/classes', label: 'Classes' },
+    { href: '/recipes', label: 'Recipes' },
     { href: '/about', label: 'About' },
     { href: '#contact', label: 'Contact' },
   ];

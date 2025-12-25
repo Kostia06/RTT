@@ -20,14 +20,14 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
   const [isAdding, setIsAdding] = useState(false);
 
   const images = product.images || [];
-  const primaryImage = images.find((img) => img.is_primary) || images[0];
+  const primaryImage = images.find((img) => img.isPrimary) || images[0];
   const currentImage = images[selectedImageIndex] || primaryImage;
-  const hasDiscount = product.compare_at_price && product.compare_at_price > product.price;
+  const hasDiscount = product.price_bulk && product.price_regular > product.price_bulk;
   const discountPercentage = hasDiscount
-    ? Math.round(((product.compare_at_price! - product.price) / product.compare_at_price!) * 100)
+    ? Math.round(((product.price_regular - product.price_bulk!) / product.price_regular) * 100)
     : 0;
 
-  const currentPrice = selectedVariant?.price || product.price;
+  const currentPrice = selectedVariant?.price || product.price_regular;
 
   const handleAddToCart = () => {
     setIsAdding(true);
@@ -98,7 +98,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
           <h1 className="text-3xl md:text-4xl font-black text-black tracking-tight">
             {product.name}
           </h1>
-          <p className="mt-3 text-lg text-gray-600">{product.short_description}</p>
+          <p className="mt-3 text-lg text-gray-600">{product.description}</p>
         </div>
 
         {/* Price */}
@@ -108,7 +108,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
           </span>
           {hasDiscount && (
             <span className="text-xl text-gray-400 line-through">
-              ${product.compare_at_price!.toFixed(2)}
+              ${product.price_regular.toFixed(2)}
             </span>
           )}
         </div>
@@ -131,7 +131,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                   }`}
                 >
                   {variant.name}
-                  {variant.price !== product.price && (
+                  {variant.price !== product.price_regular && (
                     <span className="block text-xs mt-0.5 opacity-70">
                       ${variant.price.toFixed(2)}
                     </span>

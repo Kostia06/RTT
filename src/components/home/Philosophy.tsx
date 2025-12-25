@@ -126,7 +126,7 @@ export const Philosophy: React.FC = () => {
           <div className="philosophy-content">
             <div className="flex items-center gap-6 mb-8">
               <div className="h-px bg-white/30 w-16" />
-              <span className="text-sm tracking-[0.3em] text-white/50 uppercase">Our Philosophy</span>
+              <span className="text-sm tracking-[0.3em] text-gray-400 uppercase">Our Philosophy</span>
             </div>
 
             <div className="mb-12">
@@ -134,7 +134,7 @@ export const Philosophy: React.FC = () => {
                 <span ref={numberRef} className="text-[12rem] md:text-[16rem] font-black leading-none text-white">
                   0
                 </span>
-                <div className="text-white/50">
+                <div className="text-gray-400">
                   <span className="text-4xl font-light">hours</span>
                   <br />
                   <span className="text-lg">of slow-simmering</span>
@@ -145,12 +145,12 @@ export const Philosophy: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-black tracking-[-0.02em] mb-8 leading-tight">
               PATIENCE IS
               <br />
-              <span className="text-outline">THE SECRET</span>
+              <span className="text-outline-white">THE SECRET</span>
               <br />
               INGREDIENT
             </h2>
 
-            <p className="text-xl text-white/60 leading-relaxed max-w-lg">
+            <p className="text-xl text-gray-300 leading-relaxed max-w-lg">
               There are no shortcuts to greatness. Our tonkotsu broth is a
               testament to the Hakata tradition—a labor of love that cannot
               be rushed.
@@ -183,15 +183,15 @@ export const Philosophy: React.FC = () => {
             ].map((step, i) => (
               <div
                 key={i}
-                className="philosophy-step group border-t border-white/10 py-8 hover:bg-white/5 transition-colors px-6 -mx-6"
+                className="philosophy-step group border-t border-white/20 py-8 hover:bg-white/5 transition-colors px-6 -mx-6"
               >
                 <div className="flex items-start gap-8">
-                  <span className="text-sm text-white/30 font-mono mt-1">{step.num}</span>
+                  <span className="text-sm text-gray-500 font-mono mt-1">{step.num}</span>
                   <div>
-                    <h3 className="text-2xl font-bold mb-2 group-hover:translate-x-2 transition-transform">
+                    <h3 className="text-2xl font-bold mb-2 group-hover:translate-x-2 transition-transform text-white">
                       {step.title}
                     </h3>
-                    <p className="text-white/50">{step.desc}</p>
+                    <p className="text-gray-400">{step.desc}</p>
                   </div>
                 </div>
               </div>
@@ -201,8 +201,8 @@ export const Philosophy: React.FC = () => {
       </div>
 
       <style jsx>{`
-        .text-outline {
-          -webkit-text-stroke: 1px white;
+        .text-outline-white {
+          -webkit-text-stroke: 1.5px white;
           color: transparent;
         }
       `}</style>

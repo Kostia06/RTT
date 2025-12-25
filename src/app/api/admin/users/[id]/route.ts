@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function PATCH(
@@ -39,7 +39,7 @@ export async function PATCH(
       );
     }
 
-    const serviceSupabase = await createClient();
+    const serviceSupabase = await createServiceClient();
 
     // Update role if provided
     if (role) {

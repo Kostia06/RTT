@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/lib/db/supabase';
+import { createClient } from '@/lib/supabase/server';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -9,19 +9,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = getServiceSupabase();
+    const supabase = await createClient();
     const { id } = await params;
 
-    // Build query with joins
+    // Build query
     let query = supabase
       .from('products')
-      .select(`
-        *,
-        images:product_images(*),
-        variants:product_variants(*),
-        nutritional_info:product_nutritional_info(*)
-      `)
-      .eq('is_active', true);
+      .select('*')
+      .eq('active', true);
 
     // Determine if id is UUID or slug
     if (UUID_REGEX.test(id)) {

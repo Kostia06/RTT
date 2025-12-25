@@ -57,25 +57,39 @@ function ShopContent() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero animation
+      // Hero character animation
       gsap.fromTo(
         '.hero-char',
-        { y: 80, opacity: 0 },
+        { y: 120, opacity: 0, rotateX: -60 },
         {
           y: 0,
           opacity: 1,
-          duration: 0.8,
-          stagger: 0.02,
+          rotateX: 0,
+          duration: 1,
+          stagger: 0.03,
           ease: 'power3.out',
           delay: 0.2,
         }
       );
 
+      // Hero subtitle
       gsap.fromTo(
         '.hero-subtitle',
-        { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6, delay: 0.5 }
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, delay: 0.8 }
       );
+
+      // Parallax Kanji
+      gsap.to('.hero-kanji', {
+        y: 150,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 1,
+        },
+      });
     }, heroRef);
 
     return () => ctx.revert();
@@ -116,22 +130,49 @@ function ShopContent() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section - Compact */}
-      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-20 sm:pt-24">
-        <div className="relative py-16 sm:py-20 md:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Title */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-[-0.02em] mb-4">
-              {title.split('').map((char, i) => (
-                <span key={i} className="hero-char inline-block">
-                  {char === ' ' ? '\u00A0' : char}
-                </span>
-              ))}
-            </h1>
+      {/* Hero Section */}
+      <div ref={heroRef} className="relative bg-black text-white overflow-hidden">
+        {/* Background Pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
 
-            <p className="hero-subtitle text-sm sm:text-base text-white/60 max-w-2xl">
-              Authentic ramen kits, premium ingredients, and merchandise. Everything you need to respect the technique at home.
-            </p>
+        {/* Floating Kanji with Parallax */}
+        <div className="hero-kanji absolute top-10 right-[5%] text-[35vw] font-black text-white/[0.02] pointer-events-none select-none">
+          品
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-48 pt-56">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-3 mb-12 text-sm text-white/60">
+            <Link href="/" className="hover:text-white transition-colors">
+              Home
+            </Link>
+            <span>/</span>
+            <span className="text-white">Shop</span>
+          </div>
+
+          {/* Animated Title */}
+          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none mb-8">
+            {title.split('').map((char, i) => (
+              <span key={i} className="hero-char inline-block" style={{ perspective: '1000px' }}>
+                {char === ' ' ? '\u00A0' : char}
+              </span>
+            ))}
+          </h1>
+
+          {/* Subtitle */}
+          <p className="hero-subtitle text-xl md:text-2xl text-white/80 max-w-3xl leading-relaxed">
+            Authentic ramen kits, premium ingredients, and merchandise. Everything you need to respect the technique at home.
+          </p>
+
+          {/* Scroll Indicator */}
+          <div className="mt-16 flex items-center gap-4 text-sm text-white/60">
+            <div className="w-px h-16 bg-white/20 animate-pulse" />
+            <span className="uppercase tracking-wider">Scroll to explore</span>
           </div>
         </div>
       </div>
@@ -235,14 +276,14 @@ function ShopContent() {
                       </h3>
                       <div className="flex items-baseline gap-0.5 flex-shrink-0">
                         <span className="text-lg font-black text-black">
-                          ${product.price.toFixed(0)}
+                          ${product.price_regular.toFixed(0)}
                         </span>
-                        <span className="text-xs text-gray-400">.{(product.price % 1).toFixed(2).slice(2)}</span>
+                        <span className="text-xs text-gray-400">.{(product.price_regular % 1).toFixed(2).slice(2)}</span>
                       </div>
                     </div>
-                    {product.short_description && (
+                    {product.description && (
                       <p className="text-xs text-gray-500 line-clamp-2">
-                        {product.short_description}
+                        {product.description}
                       </p>
                     )}
                   </div>

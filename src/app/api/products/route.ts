@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/lib/db/supabase';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getServiceSupabase();
+    const supabase = await createClient();
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');
@@ -14,20 +14,15 @@ export async function GET(request: NextRequest) {
     // Build query
     let query = supabase
       .from('products')
-      .select(`
-        *,
-        images:product_images(*),
-        variants:product_variants(*),
-        nutritional_info:product_nutritional_info(*)
-      `)
-      .eq('is_active', true);
+      .select('*')
+      .eq('active', true);
 
-    if (category) {
+    if (category && category !== 'all') {
       query = query.eq('category', category);
     }
 
     if (featured === 'true') {
-      query = query.eq('is_featured', true);
+      query = query.eq('featured', true);
     }
 
     if (search) {
@@ -36,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     // Execute query with pagination
     const { data: products, error } = await query
-      .order('is_featured', { ascending: false })
+      .order('featured', { ascending: false })
       .order('created_at', { ascending: false })
       .range(skip, skip + limit - 1);
 
@@ -52,7 +47,7 @@ export async function GET(request: NextRequest) {
     const { count: total } = await supabase
       .from('products')
       .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+      .eq('active', true);
 
     return NextResponse.json(
       {

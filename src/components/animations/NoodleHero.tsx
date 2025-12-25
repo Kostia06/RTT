@@ -216,10 +216,10 @@ export const NoodleHero: React.FC = () => {
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
           </Link>
           <Link
-            href="/classes"
+            href="/recipes"
             className="hero-cta group relative px-8 sm:px-12 py-4 sm:py-5 border-2 sm:border border-white/30 text-white font-bold text-sm tracking-[0.2em] uppercase overflow-hidden hover:border-white active:bg-white/10 transition-colors duration-300 touch-manipulation"
           >
-            <span className="relative z-10">Learn the Craft</span>
+            <span className="relative z-10">Browse Recipes</span>
           </Link>
         </div>
       </div>

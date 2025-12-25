@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export const Footer: React.FC = () => {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
   const footerRef = useRef<HTMLElement>(null);
   const [formData, setFormData] = useState({
@@ -95,7 +97,7 @@ export const Footer: React.FC = () => {
   ];
 
   const learnLinks = [
-    { href: '/classes', label: 'Ramen Classes' },
+    { href: '/recipes', label: 'Recipes' },
     { href: '/about', label: 'Our Story' },
   ];
 
@@ -104,6 +106,21 @@ export const Footer: React.FC = () => {
     { href: '/privacy', label: 'Privacy' },
     { href: '/terms', label: 'Terms' },
   ];
+
+  // Hide footer on employee dashboard and related pages
+  const hideFooter = pathname?.startsWith('/dashboard') ||
+                     pathname?.startsWith('/admin/') ||
+                     pathname?.startsWith('/orders') ||
+                     pathname?.startsWith('/inventory') ||
+                     pathname?.startsWith('/support') ||
+                     pathname?.startsWith('/reports') ||
+                     pathname?.startsWith('/time-tracking') ||
+                     pathname?.startsWith('/schedule') ||
+                     pathname?.startsWith('/inventory-advanced');
+
+  if (hideFooter) {
+    return null;
+  }
 
   return (
     <footer id="contact" ref={footerRef} className="bg-black text-white relative overflow-hidden">

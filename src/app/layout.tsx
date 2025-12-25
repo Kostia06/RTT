@@ -14,6 +14,10 @@ export const metadata: Metadata = {
     description: 'Discover authentic Hakata-style ramen, handcrafted with 18 hours of patience.',
     type: 'website',
   },
+  icons: {
+    icon: '/favicon/icon.png',
+    apple: '/favicon/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
@@ -23,12 +27,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+    <head>
+      </head>
       <body className="antialiased flex flex-col min-h-screen">
         <CartProvider>
           <Header />
-          <main className="flex-1">
-            {children}
-          </main>
+          <main className="flex-1">{children}</main>
           <Footer />
           <CartDrawer />
         </CartProvider>
@@ -36,3 +40,4 @@ export default function RootLayout({
     </html>
   );
 }
+

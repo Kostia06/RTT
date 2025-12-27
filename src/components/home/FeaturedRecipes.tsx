@@ -111,8 +111,8 @@ export const FeaturedRecipes: React.FC = () => {
   const title = 'RECIPES';
 
   return (
-    <section ref={sectionRef} className="py-32 bg-black text-white relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
         {/* Section header */}
         <div className="mb-20">
           <div className="flex items-center gap-8 mb-6">

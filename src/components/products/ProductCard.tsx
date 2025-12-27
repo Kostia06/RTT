@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { IProduct } from '@/types';
 import { Card } from '@/components/ui';
+import { useCart } from '@/contexts/CartContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,12 +18,26 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
+  const { addItem } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
 
   const primaryImage = product.images?.find((img) => img.isPrimary) || product.images?.[0];
   const hasDiscount = product.price_bulk && product.price_regular > product.price_bulk;
   const discountPercentage = hasDiscount
     ? Math.round(((product.price_regular - product.price_bulk!) / product.price_regular) * 100)
     : 0;
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setIsAdding(true);
+    addItem(product as any, 1);
+
+    setTimeout(() => {
+      setIsAdding(false);
+    }, 1000);
+  };
 
   useEffect(() => {
     if (!cardRef.current || !imageRef.current) return;
@@ -106,15 +121,48 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </p>
           )}
 
-          <div className="flex items-baseline gap-2">
-            <span className="text-base sm:text-lg font-bold text-black">
-              ${(hasDiscount ? product.price_bulk! : product.price_regular).toFixed(2)}
-            </span>
-            {hasDiscount && (
-              <span className="text-xs sm:text-sm text-gray-400 line-through">
-                ${product.price_regular.toFixed(2)}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-2">
+              <span className="text-base sm:text-lg font-bold text-black">
+                ${(hasDiscount ? product.price_bulk! : product.price_regular).toFixed(2)}
               </span>
-            )}
+              {hasDiscount && (
+                <span className="text-xs sm:text-sm text-gray-400 line-through">
+                  ${product.price_regular.toFixed(2)}
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={handleAddToCart}
+              disabled={isAdding}
+              className={`
+                flex items-center justify-center gap-2 px-3 py-2
+                text-xs font-bold uppercase tracking-wider
+                transition-all duration-300
+                ${
+                  isAdding
+                    ? 'bg-green-500 text-white'
+                    : 'bg-black text-white hover:bg-gray-800'
+                }
+              `}
+            >
+              {isAdding ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Added
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add
+                </>
+              )}
+            </button>
           </div>
         </div>
       </Card>

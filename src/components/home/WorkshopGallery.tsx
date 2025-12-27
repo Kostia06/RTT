@@ -91,8 +91,8 @@ export const WorkshopGallery: React.FC = () => {
   const title = 'BEHIND THE SCENES';
 
   return (
-    <section ref={sectionRef} className="py-32 bg-white text-black relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         {/* Header */}
         <div className="mb-20 text-center">
           <div className="flex items-center justify-center gap-6 mb-8">

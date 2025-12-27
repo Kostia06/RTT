@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { generateContentWithFunctions } from '@/lib/gemini/client';
 
 // Define available functions the AI can call
@@ -146,6 +146,77 @@ const availableFunctions = [
       required: ['product_slug', 'quantity'],
     },
   },
+  {
+    name: 'delete_product',
+    description: 'Delete a product from the shop',
+    parameters: {
+      type: 'object',
+      properties: {
+        slug: {
+          type: 'string',
+          description: 'Product slug to delete',
+        },
+      },
+      required: ['slug'],
+    },
+  },
+  {
+    name: 'delete_recipe',
+    description: 'Delete a recipe',
+    parameters: {
+      type: 'object',
+      properties: {
+        slug: {
+          type: 'string',
+          description: 'Recipe slug to delete',
+        },
+      },
+      required: ['slug'],
+    },
+  },
+  {
+    name: 'update_product',
+    description: 'Update product details (for shop/store items for sale, retail products, merchandise). Use this for items found at /shop, NOT for recipes.',
+    parameters: {
+      type: 'object',
+      properties: {
+        slug: {
+          type: 'string',
+          description: 'Product slug (URL-friendly version)',
+        },
+        name: { type: 'string', description: 'Product name' },
+        price_regular: { type: 'number', description: 'Regular price in dollars' },
+        description: { type: 'string' },
+        is_featured: { type: 'boolean' },
+      },
+      required: ['slug'],
+    },
+  },
+  {
+    name: 'update_recipe',
+    description: 'Update recipe details (for dishes/food recipes like ramen recipes, cooking instructions). Use this for items found at /recipes like "Rayu Island", "Tonkotsu Ramen", etc.',
+    parameters: {
+      type: 'object',
+      properties: {
+        slug: {
+          type: 'string',
+          description: 'Recipe slug (URL-friendly version of recipe name)',
+        },
+        title: {
+          type: 'string',
+          description: 'Recipe title/name'
+        },
+        description: { type: 'string' },
+        difficulty: {
+          type: 'string',
+          enum: ['Easy', 'Medium', 'Hard'],
+        },
+        servings: { type: 'number' },
+        featured: { type: 'boolean' },
+      },
+      required: ['slug'],
+    },
+  },
 ];
 
 export async function POST(request: Request) {
@@ -166,7 +237,9 @@ export async function POST(request: Request) {
 
     // If action is provided, execute it (after user confirmation)
     if (action) {
-      return await executeAction(action, supabase, user);
+      // Use service role client for admin operations
+      const serviceClient = await createServiceClient();
+      return await executeAction(action, serviceClient, user);
     }
 
     // Otherwise, generate AI response with function calling
@@ -174,8 +247,17 @@ export async function POST(request: Request) {
 You can help with:
 - Creating recipes (with ingredients, instructions, images)
 - Creating products for the shop
+- Deleting products or recipes
+- Updating recipe details (like "Rayu Island", "Tonkotsu Ramen" - these are RECIPES, not products)
+- Updating product details (shop items for sale)
 - Approving users and setting their roles
 - Updating inventory quantities
+
+IMPORTANT:
+- Recipes are dishes/food items found at /recipes (like "Rayu Island", ramen bowls, etc.)
+- Products are items for sale in the shop at /shop
+- When updating recipes, convert the name to a slug (lowercase, hyphens instead of spaces)
+  Example: "Rayu Island" → slug: "rayu-island"
 
 When a user asks you to perform an action, use the appropriate function call.
 Be conversational and helpful. Ask for clarification if needed.
@@ -199,7 +281,8 @@ User role: ${user.user_metadata?.role || 'employee'}`;
     );
 
     // Check if AI wants to call a function
-    const functionCall = response.functionCalls()?.[0];
+    const functionCalls = response.functionCalls;
+    const functionCall = functionCalls && functionCalls.length > 0 ? functionCalls[0] : null;
 
     if (functionCall) {
       // Return the proposed action for user confirmation
@@ -217,7 +300,7 @@ User role: ${user.user_metadata?.role || 'employee'}`;
     // Return regular text response
     return NextResponse.json({
       type: 'text',
-      message: response.text(),
+      message: response.text || '',
     });
   } catch (error) {
     console.error('AI Assistant error:', error);
@@ -245,6 +328,31 @@ ${args.featured ? '- Will be featured ⭐' : ''}`;
 - Initial stock: ${args.stock_quantity}
 ${args.is_featured ? '- Will be featured ⭐' : ''}`;
 
+    case 'delete_product':
+      return `**Delete Product**
+- Product: ${args.slug}
+⚠️ This action cannot be undone`;
+
+    case 'delete_recipe':
+      return `**Delete Recipe**
+- Recipe: ${args.slug}
+⚠️ This action cannot be undone`;
+
+    case 'update_product':
+      return `**Update Product: ${args.slug}**
+${args.name ? `- Name: ${args.name}` : ''}
+${args.price_regular ? `- Price: $${args.price_regular}` : ''}
+${args.description ? `- Description updated` : ''}
+${args.is_featured !== undefined ? `- Featured: ${args.is_featured}` : ''}`;
+
+    case 'update_recipe':
+      return `**Update Recipe: ${args.slug}**
+${args.title ? `- Title: ${args.title}` : ''}
+${args.difficulty ? `- Difficulty: ${args.difficulty}` : ''}
+${args.servings ? `- Servings: ${args.servings}` : ''}
+${args.description ? `- Description updated` : ''}
+${args.featured !== undefined ? `- Featured: ${args.featured}` : ''}`;
+
     case 'approve_user':
       return `**Approve User**
 - Email: ${args.email}
@@ -270,6 +378,18 @@ async function executeAction(action: any, supabase: any, user: any) {
 
       case 'create_product':
         return await createProduct(args, supabase);
+
+      case 'delete_product':
+        return await deleteProduct(args, supabase);
+
+      case 'delete_recipe':
+        return await deleteRecipe(args, supabase);
+
+      case 'update_product':
+        return await updateProduct(args, supabase);
+
+      case 'update_recipe':
+        return await updateRecipe(args, supabase);
 
       case 'approve_user':
         // Check if user is admin
@@ -400,5 +520,90 @@ async function updateInventory(args: any, supabase: any) {
     type: 'success',
     message: `✅ Inventory updated for ${product.name}: ${args.quantity} units`,
     data: { id: product.id, stock_quantity: product.stock_quantity },
+  });
+}
+
+async function deleteProduct(args: any, supabase: any) {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('slug', args.slug);
+
+  if (error) {
+    throw error;
+  }
+
+  return NextResponse.json({
+    type: 'success',
+    message: `✅ Product "${args.slug}" has been deleted successfully`,
+  });
+}
+
+async function deleteRecipe(args: any, supabase: any) {
+  const { error } = await supabase
+    .from('recipes')
+    .delete()
+    .eq('slug', args.slug);
+
+  if (error) {
+    throw error;
+  }
+
+  return NextResponse.json({
+    type: 'success',
+    message: `✅ Recipe "${args.slug}" has been deleted successfully`,
+  });
+}
+
+async function updateProduct(args: any, supabase: any) {
+  const updateData: any = {};
+
+  if (args.name) updateData.name = args.name;
+  if (args.price_regular) updateData.price_regular = args.price_regular;
+  if (args.description) updateData.description = args.description;
+  if (args.is_featured !== undefined) updateData.is_featured = args.is_featured;
+
+  const { data: product, error } = await supabase
+    .from('products')
+    .update(updateData)
+    .eq('slug', args.slug)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return NextResponse.json({
+    type: 'success',
+    message: `✅ Product "${product.name}" has been updated successfully`,
+    link: `/shop/${product.slug}`,
+  });
+}
+
+async function updateRecipe(args: any, supabase: any) {
+  const updateData: any = {};
+
+  if (args.title) updateData.title = args.title;
+  if (args.description) updateData.description = args.description;
+  if (args.difficulty) updateData.difficulty = args.difficulty;
+  if (args.servings) updateData.servings = args.servings;
+  if (args.featured !== undefined) updateData.featured = args.featured;
+
+  const { data: recipe, error } = await supabase
+    .from('recipes')
+    .update(updateData)
+    .eq('slug', args.slug)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return NextResponse.json({
+    type: 'success',
+    message: `✅ Recipe "${recipe.title}" has been updated successfully`,
+    link: `/recipes/${recipe.slug}`,
   });
 }

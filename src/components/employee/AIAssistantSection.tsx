@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -30,7 +31,7 @@ export default function AIAssistantSection() {
       id: '1',
       type: 'assistant',
       content:
-        "👋 Hi! I'm your AI assistant. I can help you:\n\n• **Create recipes** - with ingredients, instructions, and images\n• **Add products** - set pricing, categories, and stock\n• **Approve users** - manage roles and permissions (admin only)\n• **Update inventory** - adjust stock quantities\n\nJust describe what you need in natural language, and I'll take care of the rest!",
+        "👋 Hi! I can help you:\n\n• Create/update/delete recipes\n• Add/update/delete products\n• Update inventory\n• Approve users (admin)\n\nJust describe what you need!",
     },
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -46,7 +47,7 @@ export default function AIAssistantSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,28 +224,23 @@ export default function AIAssistantSection() {
     <>
       <div className="ai-assistant-section bg-white border border-gray-300 shadow-sm">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-black text-white flex items-center justify-center font-bold text-sm">
+        <div className="flex items-center justify-between p-2 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-black text-white flex items-center justify-center font-bold text-xs">
               AI
             </div>
-            <div>
-              <h2 className="text-lg font-bold">AI Assistant</h2>
-              <p className="text-xs text-gray-500">Quick help for common tasks</p>
-            </div>
+            <h2 className="text-sm font-bold">AI Assistant</h2>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
             <span>Ready</span>
           </div>
         </div>
 
         {/* Chat Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
-          {/* Messages Area */}
-          <div className="lg:col-span-2 flex flex-col">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white min-h-[300px] max-h-[400px]">
+        <div className="flex flex-col">
+          {/* Messages */}
+          <div className="overflow-y-auto p-3 space-y-3 bg-white min-h-[200px] max-h-[300px]">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -257,9 +253,13 @@ export default function AIAssistantSection() {
                         : 'bg-gray-50 border border-gray-200 text-gray-800'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-line leading-relaxed">
-                      {message.content}
-                    </p>
+                    <div className={`text-sm leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:font-bold ${
+                      message.type === 'user'
+                        ? 'prose-invert prose-strong:text-white'
+                        : 'prose-strong:text-black'
+                    }`}>
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
                     {message.images && message.images.length > 0 && (
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {message.images.map((img, idx) => (
@@ -309,15 +309,15 @@ export default function AIAssistantSection() {
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
-            </div>
+            <div ref={messagesEndRef} />
+          </div>
 
-            {/* Image Preview */}
-            {selectedImages.length > 0 && (
-              <div className="px-6 sm:px-8 py-4 border-t-2 border-gray-200 bg-white">
-                <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
-                  Attached Images ({selectedImages.length})
-                </p>
+          {/* Image Preview */}
+          {selectedImages.length > 0 && (
+            <div className="px-3 py-2 border-t border-gray-200 bg-white">
+              <p className="text-xs font-bold text-gray-500 mb-2">
+                Attached Images ({selectedImages.length})
+              </p>
                 <div className="flex gap-3 overflow-x-auto pb-2">
                   {selectedImages.map((file, idx) => (
                     <div key={idx} className="relative flex-shrink-0">
@@ -336,13 +336,13 @@ export default function AIAssistantSection() {
                         ×
                       </button>
                     </div>
-                  ))}
-                </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Input */}
-            <div className="p-3 border-t border-gray-200 bg-gray-50">
+          {/* Input */}
+          <div className="p-2 border-t border-gray-200 bg-gray-50">
               <div className="flex gap-2">
                 <input
                   type="file"
@@ -390,91 +390,7 @@ export default function AIAssistantSection() {
               </div>
             </div>
           </div>
-
-          {/* Sidebar - Quick Actions & Tips */}
-          <div className="lg:col-span-1 border-l-0 lg:border-l-2 border-t-2 lg:border-t-0 border-black bg-gray-50 p-6 sm:p-8">
-            <div className="space-y-6">
-              {/* Quick Actions */}
-              <div>
-                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-wider">
-                  Quick Actions
-                </h3>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => setInputValue('Create a new ramen recipe')}
-                    className="w-full text-left px-4 py-3 bg-white border border-gray-200 hover:border-black text-sm transition-colors rounded group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">📝</span>
-                      <span className="font-medium group-hover:font-bold">Create Recipe</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setInputValue('Add a new product to the shop')}
-                    className="w-full text-left px-4 py-3 bg-white border border-gray-200 hover:border-black text-sm transition-colors rounded group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🛍️</span>
-                      <span className="font-medium group-hover:font-bold">Add Product</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setInputValue('Update inventory for ')}
-                    className="w-full text-left px-4 py-3 bg-white border border-gray-200 hover:border-black text-sm transition-colors rounded group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">📦</span>
-                      <span className="font-medium group-hover:font-bold">Update Inventory</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Tips */}
-              <div>
-                <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-wider">
-                  Tips
-                </h3>
-                <div className="space-y-3 text-xs text-gray-600">
-                  <div className="flex gap-2">
-                    <span className="flex-shrink-0">💡</span>
-                    <p>You can upload images of dishes to help create recipes</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="flex-shrink-0">💡</span>
-                    <p>Be specific about quantities, times, and difficulty levels</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="flex-shrink-0">💡</span>
-                    <p>I&apos;ll always ask for confirmation before making changes</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="flex-shrink-0">💡</span>
-                    <p>Use natural language - just tell me what you need!</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-sm font-black text-gray-900 mb-3 uppercase tracking-wider">
-                  Session Stats
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white p-3 rounded border border-gray-200">
-                    <div className="text-xl font-black text-black">{messages.length - 1}</div>
-                    <div className="text-xs text-gray-500">Messages</div>
-                  </div>
-                  <div className="bg-white p-3 rounded border border-gray-200">
-                    <div className="text-xl font-black text-black">{selectedImages.length}</div>
-                    <div className="text-xs text-gray-500">Images</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
 
       {/* Confirmation Dialog */}
       {confirmation.isOpen && (
@@ -504,9 +420,9 @@ export default function AIAssistantSection() {
               </div>
 
               <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
-                  {confirmation.preview}
-                </p>
+                <div className="text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-strong:font-bold prose-strong:text-black">
+                  <ReactMarkdown>{confirmation.preview}</ReactMarkdown>
+                </div>
               </div>
 
               <div className="flex gap-3">

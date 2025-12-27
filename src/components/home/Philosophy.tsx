@@ -101,7 +101,7 @@ export const Philosophy: React.FC = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-40 bg-black text-white relative overflow-hidden">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
       {/* Massive scrolling text */}
       <div className="absolute top-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-none">
         <span className="horizontal-text text-[20vw] font-black text-white/[0.02] tracking-[-0.04em]">

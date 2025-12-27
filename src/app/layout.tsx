@@ -14,10 +14,7 @@ export const metadata: Metadata = {
     description: 'Discover authentic Hakata-style ramen, handcrafted with 18 hours of patience.',
     type: 'website',
   },
-  icons: {
-    icon: '/favicon/icon.png',
-    apple: '/favicon/apple-icon.png',
-  },
+
 };
 
 export default function RootLayout({
@@ -28,6 +25,8 @@ export default function RootLayout({
   return (
     <html lang="en">
     <head>
+        <link rel="icon" href="/favicon/icon.png" sizes="32x32" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon/apple-icon.png" sizes="180x180" />
       </head>
       <body className="antialiased flex flex-col min-h-screen">
         <CartProvider>

@@ -1,13 +1,7 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
-export const geminiModel = genAI.getGenerativeModel({
-  model: 'gemini-1.5-flash',
-});
-
-export const geminiVisionModel = genAI.getGenerativeModel({
-  model: 'gemini-1.5-flash',
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
 });
 
 export interface FileData {
@@ -15,23 +9,27 @@ export interface FileData {
   data: string; // base64
 }
 
-type Part = 
-  | { text: string }  // TextPart
-  | { inlineData: FileData }; // InlineDataPart
-
 export async function generateContent(prompt: string, images?: FileData[]) {
   try {
-    const parts: Part[] = [{ text: prompt }];
+    const parts: any[] = [{ text: prompt }];
 
     if (images && images.length > 0) {
       images.forEach((image) => {
-        parts.push({ inlineData: image });
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType,
+            data: image.data,
+          },
+        });
       });
     }
 
-    const result = await geminiVisionModel.generateContent(parts);
-    const response = await result.response;
-    return response.text();
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: parts,
+    });
+
+    return response.text;
   } catch (error) {
     console.error('Gemini API error:', error);
     throw error;
@@ -44,21 +42,30 @@ export async function generateContentWithFunctions(
   images?: FileData[]
 ) {
   try {
-    const parts: Part[] = [{ text: prompt }];
+    const parts: any[] = [{ text: prompt }];
 
     if (images && images.length > 0) {
       images.forEach((image) => {
-        parts.push({ inlineData: image });
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType,
+            data: image.data,
+          },
+        });
       });
     }
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      tools: [{ functionDeclarations: functions }],
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: parts,
+      config: {
+        tools: [
+          {
+            functionDeclarations: functions,
+          },
+        ],
+      },
     });
-
-    const result = await model.generateContent(parts);
-    const response = await result.response;
 
     return response;
   } catch (error) {

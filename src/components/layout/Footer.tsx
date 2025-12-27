@@ -19,6 +19,7 @@ export const Footer: React.FC = () => {
     message: '',
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -70,16 +71,42 @@ export const Footer: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
+    setErrorMessage('');
 
-    // Simulate form submission
-    setTimeout(() => {
-      console.log('Contact form submission:', formData);
-      setStatus('success');
-      setTimeout(() => {
-        setFormData({ name: '', email: '', message: '' });
-        setStatus('idle');
-      }, 3000);
-    }, 1500);
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          subject: 'Contact form submission',
+          message: formData.message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStatus('success');
+        setTimeout(() => {
+          setFormData({ name: '', email: '', message: '' });
+          setStatus('idle');
+        }, 3000);
+      } else {
+        console.error('Error submitting form:', data);
+        const errorMsg = data.details || data.error || 'Failed to send message';
+        setErrorMessage(errorMsg);
+        setStatus('error');
+        setTimeout(() => setStatus('idle'), 5000);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Network error';
+      setErrorMessage(errorMsg);
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 5000);
+    }
   };
 
   const handleInputChange = (
@@ -99,6 +126,7 @@ export const Footer: React.FC = () => {
   const learnLinks = [
     { href: '/recipes', label: 'Recipes' },
     { href: '/about', label: 'Our Story' },
+    { href: '/contact', label: 'Contact Us' },
   ];
 
   const infoLinks = [
@@ -245,6 +273,18 @@ export const Footer: React.FC = () => {
                 <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">Message Sent!</h3>
                 <p className="text-white/60 text-sm sm:text-base">
                   Thank you for reaching out. We&apos;ll get back to you soon.
+                </p>
+              </div>
+            ) : status === 'error' ? (
+              <div className="bg-red-500/10 border border-red-500/30 p-8 sm:p-12 text-center">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3">Error</h3>
+                <p className="text-white/60 text-sm sm:text-base">
+                  {errorMessage || 'Failed to send message. Please try again.'}
                 </p>
               </div>
             ) : (

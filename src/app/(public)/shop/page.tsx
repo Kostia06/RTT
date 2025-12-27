@@ -24,10 +24,11 @@ function ShopContent() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  const [addingProduct, setAddingProduct] = useState<string | null>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
-  const { addToCart } = useCart();
+  const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
 
   const categoryFromUrl = searchParams.get('category') || '';
 
@@ -124,6 +125,35 @@ function ShopContent() {
     setSelectedCategory(category);
     const url = category ? `/shop?category=${category}` : '/shop';
     window.history.pushState({}, '', url);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, product: IProduct) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setAddingProduct(product.id);
+    addToCart(product);
+
+    setTimeout(() => {
+      setAddingProduct(null);
+    }, 500);
+  };
+
+  const handleUpdateQuantity = (e: React.MouseEvent, productId: string, newQuantity: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (newQuantity === 0) {
+      removeFromCart(productId);
+    } else {
+      updateQuantity(productId, newQuantity);
+    }
+  };
+
+  const getProductQuantity = (productId: string): number => {
+    if (!cart || !cart.items) return 0;
+    const item = cart.items.find(item => item.product.id === productId);
+    return item ? item.quantity : 0;
   };
 
   const title = 'THE SHOP';
@@ -269,9 +299,9 @@ function ShopContent() {
                   </div>
 
                   {/* Product info */}
-                  <div className="space-y-2">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <h3 className="text-sm font-bold text-black tracking-tight">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-sm font-bold text-black tracking-tight flex-1">
                         {product.name}
                       </h3>
                       <div className="flex items-baseline gap-0.5 flex-shrink-0">
@@ -286,6 +316,47 @@ function ShopContent() {
                         {product.description}
                       </p>
                     )}
+
+                    {/* Add to Cart Controls */}
+                    {(() => {
+                      const quantity = getProductQuantity(product.id);
+                      return quantity > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => handleUpdateQuantity(e, product.id, quantity - 1)}
+                            className="w-8 h-8 bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center font-bold"
+                          >
+                            {quantity === 1 ? (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            ) : (
+                              <span>−</span>
+                            )}
+                          </button>
+                          <span className="px-4 py-2 bg-gray-100 text-black font-bold text-sm min-w-[60px] text-center">
+                            {quantity}
+                          </span>
+                          <button
+                            onClick={(e) => handleUpdateQuantity(e, product.id, quantity + 1)}
+                            className="w-8 h-8 bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center font-bold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => handleAddToCart(e, product)}
+                          className={`w-full py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                            addingProduct === product.id
+                              ? 'bg-green-500 text-white'
+                              : 'bg-black text-white hover:bg-gray-800'
+                          }`}
+                        >
+                          {addingProduct === product.id ? 'Added!' : 'Add to Cart'}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </Link>
               ))}

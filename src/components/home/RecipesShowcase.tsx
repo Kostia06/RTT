@@ -95,7 +95,7 @@ export const RecipesShowcase: React.FC = () => {
   const [mainRecipe, ...otherRecipes] = recipes;
 
   return (
-    <section ref={sectionRef} className="py-32 bg-black text-white relative overflow-hidden">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
       {/* Background pattern */}
       <div
         className="absolute inset-0 opacity-[0.03]"

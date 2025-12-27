@@ -3,7 +3,6 @@ import { ScrollProgress } from '@/components/animations/ScrollProgress';
 import { Marquee } from '@/components/home/Marquee';
 import { FeaturedProducts } from '@/components/home/FeaturedProducts';
 import { RecipesShowcase } from '@/components/home/RecipesShowcase';
-import { FeaturedRecipes } from '@/components/home/FeaturedRecipes';
 import { WorkshopsTeaser } from '@/components/home/WorkshopsTeaser';
 import { Philosophy } from '@/components/home/Philosophy';
 import { WorkshopGallery } from '@/components/home/WorkshopGallery';

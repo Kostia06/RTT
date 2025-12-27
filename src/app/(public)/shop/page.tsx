@@ -28,7 +28,7 @@ function ShopContent() {
   const heroRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
-  const { cart, addToCart, updateQuantity, removeFromCart } = useCart();
+  const { state, addToCart, updateQuantity, removeFromCart } = useCart();
 
   const categoryFromUrl = searchParams.get('category') || '';
 
@@ -151,8 +151,8 @@ function ShopContent() {
   };
 
   const getProductQuantity = (productId: string): number => {
-    if (!cart || !cart.items) return 0;
-    const item = cart.items.find(item => item.product.id === productId);
+    if (!state || !state.items) return 0;
+    const item = state.items.find(item => item.productId === productId);
     return item ? item.quantity : 0;
   };
 

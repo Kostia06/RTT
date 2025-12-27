@@ -284,7 +284,7 @@ User role: ${user.user_metadata?.role || 'employee'}`;
     const functionCalls = response.functionCalls;
     const functionCall = functionCalls && functionCalls.length > 0 ? functionCalls[0] : null;
 
-    if (functionCall) {
+    if (functionCall && functionCall.name) {
       // Return the proposed action for user confirmation
       return NextResponse.json({
         type: 'function_call',

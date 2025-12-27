@@ -18,6 +18,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
+  const tiltRef = useRef<HTMLDivElement>(null);
   const { addItem } = useCart();
   const [isAdding, setIsAdding] = useState(false);
 
@@ -26,6 +27,42 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const discountPercentage = hasDiscount
     ? Math.round(((product.price_regular - product.price_bulk!) / product.price_regular) * 100)
     : 0;
+
+  // 3D tilt effect with GSAP
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!tiltRef.current) return;
+
+    const rect = tiltRef.current.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const xPct = (mouseX / width - 0.5) * 2; // -1 to 1
+    const yPct = (mouseY / height - 0.5) * 2; // -1 to 1
+
+    const rotateY = xPct * 7.5; // -7.5 to 7.5
+    const rotateX = -yPct * 7.5; // -7.5 to 7.5
+
+    gsap.to(tiltRef.current, {
+      rotateX: rotateX,
+      rotateY: rotateY,
+      duration: 0.5,
+      ease: 'power2.out',
+    });
+  };
+
+  const handleMouseLeave = () => {
+    if (!tiltRef.current) return;
+
+    gsap.to(tiltRef.current, {
+      rotateX: 0,
+      rotateY: 0,
+      duration: 0.5,
+      ease: 'power2.out',
+    });
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -79,8 +116,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <Link href={`/shop/${product.slug}`} className="group block touch-manipulation active:opacity-80 transition-opacity">
       <Card hover padding="none" className="overflow-hidden border-0 shadow-none">
-        <div ref={cardRef}>
-          <div className="relative aspect-square bg-gray-100 overflow-hidden">
+        <div
+          ref={tiltRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{
+            transformStyle: 'preserve-3d',
+          }}
+        >
+          <div ref={cardRef} className="relative aspect-square bg-gray-100 overflow-hidden" style={{ transform: 'translateZ(50px)' }}>
             <div ref={imageRef} className="absolute inset-0">
               {primaryImage && (
                 <Image
@@ -105,9 +149,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {/* Quick view overlay */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 group-active:bg-black/10 transition-colors duration-300 z-10" />
           </div>
-        </div>
 
-        <div className="pt-3 sm:pt-4 px-1 sm:px-0">
+          <div className="pt-3 sm:pt-4 px-1 sm:px-0" style={{ transform: 'translateZ(75px)' }}>
           <div className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-1">
             {product.category.replace('-', ' ')}
           </div>
@@ -163,6 +206,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </>
               )}
             </button>
+          </div>
           </div>
         </div>
       </Card>

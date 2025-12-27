@@ -164,7 +164,17 @@ export default function TimeTrackingPage() {
                   <>
                     <p className="text-lg text-green-600 font-bold">Clocked In</p>
                     <p className="text-sm text-gray-600">
-                      Since {format(new Date(activeEntry.clockIn), 'h:mm a')}
+                      Since {(() => {
+                        let clockInStr = activeEntry.clockIn;
+                        if (!clockInStr.endsWith('Z') && !clockInStr.includes('+') && !clockInStr.includes('-', 10)) {
+                          clockInStr = clockInStr + 'Z';
+                        }
+                        return new Date(clockInStr).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        });
+                      })()}
                     </p>
                   </>
                 ) : (
@@ -172,7 +182,13 @@ export default function TimeTrackingPage() {
                 )}
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/clock-in"
+                  className="px-6 py-3 bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors border-2 border-black text-center"
+                >
+                  Quick Clock In/Out
+                </Link>
                 {!activeEntry ? (
                   <button
                     onClick={handleClockIn}
@@ -219,29 +235,52 @@ export default function TimeTrackingPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {entries.map(entry => (
-                  <tr key={entry.id} className={!entry.clockOut ? 'bg-green-50' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(entry.date), 'MMM dd, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format(new Date(entry.clockIn), 'h:mm a')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {entry.clockOut ? format(new Date(entry.clockOut), 'h:mm a') : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                      {entry.totalHours ? `${entry.totalHours.toFixed(2)} hrs` : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {entry.clockOut ? (
-                        <span className="px-2 py-1 text-xs font-bold bg-gray-100 text-gray-800 rounded">Completed</span>
-                      ) : (
-                        <span className="px-2 py-1 text-xs font-bold bg-green-100 text-green-800 rounded">Active</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {entries.map(entry => {
+                  // Helper to add Z for UTC parsing if needed
+                  const parseUTC = (timestamp: string) => {
+                    let str = timestamp;
+                    if (!str.endsWith('Z') && !str.includes('+') && !str.includes('-', 10)) {
+                      str = str + 'Z';
+                    }
+                    return new Date(str);
+                  };
+
+                  return (
+                    <tr key={entry.id} className={!entry.clockOut ? 'bg-green-50' : ''}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {parseUTC(entry.clockIn).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {parseUTC(entry.clockIn).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {entry.clockOut ? parseUTC(entry.clockOut).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        }) : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                        {entry.totalHours ? `${entry.totalHours.toFixed(2)} hrs` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {entry.clockOut ? (
+                          <span className="px-2 py-1 text-xs font-bold bg-gray-100 text-gray-800 rounded">Completed</span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-bold bg-green-100 text-green-800 rounded">Active</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {entries.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-gray-500">

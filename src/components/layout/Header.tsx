@@ -21,16 +21,22 @@ export const Header: React.FC = () => {
   const logoRef = useRef<HTMLDivElement>(null);
 
   // Pages with dark hero sections that should have transparent navbar initially
-  const darkHeroPages = ['/', '/shop', '/recipes', '/login', '/register', '/about'];
+  const darkHeroPages = ['/', '/shop', '/recipes', '/workshops', '/about'];
   const hasDarkHero = darkHeroPages.some(page =>
-    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/recipes/') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/')
+    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/recipes/') || pathname?.startsWith('/workshops') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/')
   );
+
+  // Auth pages should have black navbar
+  const isAuthPage = pathname === '/login' || pathname === '/register';
 
   useEffect(() => {
     const handleScroll = () => {
+      // For auth pages, never change (handled by isAuthPage)
       // For pages with dark hero, transition to white background on scroll
       // For pages with white background, always show white navbar
-      if (hasDarkHero) {
+      if (isAuthPage) {
+        setScrolled(false); // Keep it in "non-scrolled" state for dark styling
+      } else if (hasDarkHero) {
         setScrolled(window.scrollY > 20);
       } else {
         setScrolled(true);
@@ -42,7 +48,7 @@ export const Header: React.FC = () => {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasDarkHero]);
+  }, [hasDarkHero, isAuthPage]);
 
   useEffect(() => {
     if (!headerRef.current) return;
@@ -94,6 +100,7 @@ export const Header: React.FC = () => {
   const baseNavLinks = [
     { href: '/shop', label: 'Shop' },
     { href: '/recipes', label: 'Recipes' },
+    { href: '/workshops', label: 'Workshops' },
     { href: '/about', label: 'About' },
     { href: '#contact', label: 'Contact' },
   ];
@@ -101,9 +108,9 @@ export const Header: React.FC = () => {
   // Add employee dashboard link if user is an employee
   const navLinks = isEmployee
     ? [
-        ...baseNavLinks.slice(0, 3), // Shop, Classes, About
+        ...baseNavLinks.slice(0, 4), // Shop, Recipes, Workshops, About
         { href: '/dashboard', label: 'Dashboard' },
-        baseNavLinks[3], // Contact
+        baseNavLinks[4], // Contact
       ]
     : baseNavLinks;
 
@@ -111,7 +118,9 @@ export const Header: React.FC = () => {
     <header
       ref={headerRef}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
+        isAuthPage
+          ? 'bg-black shadow-lg border-b border-white/10'
+          : scrolled
           ? 'bg-white shadow-lg border-b border-black/10'
           : 'bg-transparent'
       }`}

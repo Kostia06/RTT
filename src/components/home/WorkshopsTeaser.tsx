@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -15,7 +14,7 @@ export const WorkshopsTeaser: React.FC = () => {
     const ctx = gsap.context(() => {
       // Title animation
       gsap.fromTo(
-        '.workshop-title-elem',
+        '.workshop-title',
         { opacity: 0, y: 50 },
         {
           opacity: 1,
@@ -23,45 +22,56 @@ export const WorkshopsTeaser: React.FC = () => {
           duration: 1,
           ease: 'power3.out',
           scrollTrigger: {
-            trigger: '.workshop-title-elem',
+            trigger: '.workshop-title',
             start: 'top 85%',
           },
         }
       );
 
-      // Cards animation
+      // Large featured workshop animation
       gsap.fromTo(
-        '.workshop-card-new',
-        { opacity: 0, y: 60, scale: 0.95 },
+        '.workshop-featured',
+        { opacity: 0, x: -100 },
         {
           opacity: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.8,
-          stagger: 0.2,
+          x: 0,
+          duration: 1,
           ease: 'power3.out',
           scrollTrigger: {
-            trigger: '.workshops-grid-new',
+            trigger: '.workshop-featured',
             start: 'top 80%',
           },
         }
       );
 
-      // CTA animation
+      // Small workshops stagger
       gsap.fromTo(
-        '.workshop-cta',
-        { opacity: 0, y: 30 },
+        '.workshop-small',
+        { opacity: 0, y: 60 },
         {
           opacity: 1,
           y: 0,
           duration: 0.8,
+          stagger: 0.15,
           ease: 'power3.out',
           scrollTrigger: {
-            trigger: '.workshop-cta',
-            start: 'top 85%',
+            trigger: '.workshops-small-grid',
+            start: 'top 75%',
           },
         }
       );
+
+      // Floating Kanji parallax
+      gsap.to('.workshop-kanji', {
+        y: -150,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: 1,
+        },
+      });
     }, sectionRef);
 
     return () => ctx.revert();
@@ -72,15 +82,17 @@ export const WorkshopsTeaser: React.FC = () => {
       title: 'Ramen Fundamentals',
       level: 'Beginner',
       duration: '3 hours',
-      description: 'Master the basics of authentic ramen making, from broth preparation to perfect assembly',
+      description: 'Master the basics of authentic ramen making. Learn broth preparation, noodle cooking, and proper assembly techniques from experienced chefs.',
       price: '$120',
+      topics: ['Broth Types', 'Noodle Preparation', 'Essential Toppings', 'Plating'],
       icon: '🍜',
+      featured: true,
     },
     {
       title: 'Advanced Broth Mastery',
       level: 'Advanced',
       duration: '4 hours',
-      description: 'Deep dive into complex broth techniques and flavor layering with traditional methods',
+      description: 'Deep dive into complex broth techniques and flavor layering',
       price: '$180',
       icon: '🔥',
     },
@@ -88,119 +100,194 @@ export const WorkshopsTeaser: React.FC = () => {
       title: 'Homemade Noodles',
       level: 'Intermediate',
       duration: '2 hours',
-      description: 'Learn to create perfect fresh ramen noodles with the ideal texture and bounce',
+      description: 'Create perfect fresh ramen noodles with ideal texture',
       price: '$95',
       icon: '🥢',
     },
   ];
 
-  return (
-    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-black/[0.02] rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-black/[0.02] rounded-full blur-3xl" />
+  const [featuredWorkshop, ...smallWorkshops] = workshops;
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full py-20">
+  return (
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
+      {/* Background pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Floating Kanji with Parallax */}
+      <div className="workshop-kanji absolute top-1/4 right-[5%] text-[35vw] font-black text-black/[0.02] pointer-events-none select-none">
+        学
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative py-20">
         {/* Header */}
-        <div className="text-center mb-20 workshop-title-elem">
-          <div className="inline-flex items-center gap-3 mb-6 px-4 py-2 bg-black/5 rounded-full">
-            <span className="text-2xl">📚</span>
-            <span className="text-xs tracking-[0.3em] text-gray-600 uppercase font-bold">Education</span>
+        <div className="workshop-title mb-16 text-center">
+          <div className="flex items-center justify-center gap-6 mb-8">
+            <div className="h-px bg-black/20 w-20" />
+            <span className="text-sm tracking-[0.3em] text-black/60 uppercase">Education</span>
+            <div className="h-px bg-black/20 w-20" />
           </div>
 
-          <h2 className="text-5xl md:text-7xl font-black text-black mb-6 tracking-tight">
-            Learn Ramen
+          <h2 className="text-5xl md:text-7xl font-black tracking-[-0.04em] text-black mb-4">
+            LEARN RAMEN
           </h2>
-
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Hands-on workshops with traditional techniques.<br />
-            Small classes, expert instruction, unforgettable experience.
+          <p className="text-xl text-black/70 max-w-2xl mx-auto">
+            Hands-on workshops with traditional techniques. Small classes, expert instruction.
           </p>
         </div>
 
-        {/* Workshop Cards */}
-        <div className="workshops-grid-new grid md:grid-cols-3 gap-8 mb-16">
-          {workshops.map((workshop, index) => (
-            <div
-              key={index}
-              className="workshop-card-new group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100"
-            >
-              {/* Card Header with Icon */}
-              <div className="relative h-48 bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute inset-0" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFFFFF' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                  }} />
-                </div>
-                <span className="text-7xl relative z-10 group-hover:scale-110 transition-transform duration-500">
-                  {workshop.icon}
-                </span>
+        {/* Layout: Large featured + smaller workshops */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Large featured workshop */}
+          <div className="workshop-featured group lg:row-span-2">
+            <div className="relative h-full min-h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden border-2 border-black/10 hover:border-black/30 transition-all duration-500">
+              {/* Background Pattern */}
+              <div
+                className="absolute inset-0 opacity-[0.03]"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                }}
+              />
 
-                {/* Level Badge */}
-                <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                  workshop.level === 'Beginner' ? 'bg-green-500 text-white' :
-                  workshop.level === 'Intermediate' ? 'bg-yellow-500 text-black' :
+              {/* Large Icon */}
+              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[20vw] opacity-5 group-hover:scale-110 transition-transform duration-700">
+                {featuredWorkshop.icon}
+              </div>
+
+              {/* Badge */}
+              <div className="absolute top-6 left-6">
+                <div className={`px-4 py-2 text-xs font-bold uppercase tracking-wider ${
+                  featuredWorkshop.level === 'Beginner' ? 'bg-green-500 text-white' :
+                  featuredWorkshop.level === 'Intermediate' ? 'bg-yellow-500 text-black' :
                   'bg-red-500 text-white'
                 }`}>
-                  {workshop.level}
+                  {featuredWorkshop.level}
                 </div>
               </div>
 
-              {/* Card Content */}
-              <div className="p-6">
-                <h3 className="text-2xl font-black text-black mb-3 group-hover:text-gray-700 transition-colors">
-                  {workshop.title}
-                </h3>
+              {/* Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="mb-4">
+                  <span className="inline-block px-3 py-1 bg-black/10 backdrop-blur-sm text-black text-xs tracking-wider uppercase mb-4">
+                    Featured Workshop
+                  </span>
+                </div>
 
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  {workshop.description}
+                <div className="flex items-center gap-4 mb-4">
+                  <span className="text-6xl">{featuredWorkshop.icon}</span>
+                  <div>
+                    <h3 className="text-4xl md:text-5xl font-black text-black mb-2 group-hover:underline underline-offset-8">
+                      {featuredWorkshop.title}
+                    </h3>
+                    <div className="flex items-center gap-4 text-sm text-black/60">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{featuredWorkshop.duration}</span>
+                      </div>
+                      <span>•</span>
+                      <span className="text-2xl font-black text-black">{featuredWorkshop.price}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-black/80 text-lg mb-6">
+                  {featuredWorkshop.description}
                 </p>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{workshop.duration}</span>
+                {featuredWorkshop.topics && (
+                  <div className="flex flex-wrap gap-2">
+                    {featuredWorkshop.topics.map((topic, i) => (
+                      <span key={i} className="px-3 py-1 bg-black/10 text-black text-xs font-medium rounded-full">
+                        {topic}
+                      </span>
+                    ))}
                   </div>
-                  <div className="text-2xl font-black text-black">
-                    {workshop.price}
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Smaller workshop cards */}
+          <div className="workshops-small-grid space-y-6">
+            {smallWorkshops.map((workshop, index) => (
+              <div
+                key={index}
+                className="workshop-small group bg-gray-50 hover:bg-gray-100 transition-all duration-500 overflow-hidden border-2 border-black/10 hover:border-black/30"
+              >
+                <div className="flex gap-6 p-6">
+                  {/* Icon Section */}
+                  <div className="flex-shrink-0">
+                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative overflow-hidden border-2 border-black/5">
+                      <div
+                        className="absolute inset-0 opacity-10"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                        }}
+                      />
+                      <span className="text-4xl relative z-10 group-hover:scale-110 transition-transform duration-500">
+                        {workshop.icon}
+                      </span>
+
+                      {/* Level Badge */}
+                      <div className={`absolute -top-1 -right-1 px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        workshop.level === 'Beginner' ? 'bg-green-500 text-white' :
+                        workshop.level === 'Intermediate' ? 'bg-yellow-500 text-black' :
+                        'bg-red-500 text-white'
+                      }`}>
+                        {workshop.level}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 flex flex-col justify-center">
+                    <h3 className="text-xl md:text-2xl font-black text-black mb-2 group-hover:underline underline-offset-4">
+                      {workshop.title}
+                    </h3>
+
+                    <p className="text-black/70 text-sm mb-3 line-clamp-2">
+                      {workshop.description}
+                    </p>
+
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-xs text-black/60">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{workshop.duration}</span>
+                      </div>
+                      <span className="text-black/30">•</span>
+                      <div className="text-lg font-black text-black">
+                        {workshop.price}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Hover Effect Border */}
-              <div className="absolute inset-0 border-2 border-black opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none" />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* CTA Section */}
-        <div className="workshop-cta bg-black rounded-3xl p-12 text-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFFFFF' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            }} />
-          </div>
-
-          <div className="relative z-10">
-            <h3 className="text-3xl md:text-4xl font-black text-white mb-4">
-              Ready to Master the Craft?
-            </h3>
-            <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
-              Join our next workshop and learn from experienced chefs in an intimate setting.
-            </p>
-
-            <Link
-              href="/workshops"
-              className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-gray-100 transition-all duration-300 rounded-full group shadow-xl"
-            >
-              <span>Explore All Workshops</span>
-              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
-          </div>
+        {/* View all CTA */}
+        <div className="mt-16 text-center">
+          <Link
+            href="/workshops"
+            className="inline-flex items-center gap-4 text-sm tracking-[0.2em] uppercase font-bold group text-black"
+          >
+            <span className="relative">
+              Explore All Workshops
+              <span className="absolute bottom-0 left-0 w-0 h-px bg-black group-hover:w-full transition-all duration-300" />
+            </span>
+            <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </Link>
         </div>
       </div>
     </section>

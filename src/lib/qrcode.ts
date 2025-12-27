@@ -51,6 +51,14 @@ export async function generateInventoryQR(itemId: string): Promise<string> {
   return generateQRCode(data);
 }
 
+export async function generateTimeTrackingQR(
+  token: string,
+  baseUrl: string
+): Promise<string> {
+  const url = `${baseUrl}/clock-in?qr=true&token=${token}`;
+  return generateQRCode(url, { width: 400 });
+}
+
 export function parseQRCodeData(qrData: string): {
   type: string;
   classId?: string;

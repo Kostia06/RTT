@@ -111,19 +111,23 @@ export default function OrdersManagementPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-20 sm:pt-24 pb-12 sm:pb-16">
-        <div className="relative py-16 sm:py-20 md:py-24">
+      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-16 sm:pt-20 pb-12 sm:pb-16">
+        <div className="relative py-12 sm:py-14 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-xs uppercase tracking-wider mb-6 transition-colors">
+            <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-xs uppercase tracking-wider mb-4 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back to Dashboard
             </Link>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-4 break-words">
-              {title.split('').map((char, i) => (
-                <span key={i} className="hero-title-char inline-block">
-                  {char === ' ' ? '\u00A0' : char}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-2 break-words overflow-visible py-2">
+              {title.split(' ').map((word, wordIndex) => (
+                <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
+                  {word.split('').map((char, charIndex) => (
+                    <span key={`${wordIndex}-${charIndex}`} className="hero-title-char inline-block will-change-transform">
+                      {char}
+                    </span>
+                  ))}
                 </span>
               ))}
             </h1>

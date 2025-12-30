@@ -139,15 +139,17 @@ export const NoodleHero: React.FC = () => {
       />
 
       {/* Large animated logo in background */}
-      <div className="hero-logo-bg absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] md:w-[60vw] md:h-[60vw] max-w-[700px] max-h-[700px]">
-        <Image
-          src="/images/logo.png"
-          alt=""
-          fill
-          className="object-contain"
-          style={{ filter: 'invert(1) brightness(2)' }}
-          priority
-        />
+      <div className="hero-logo-bg absolute inset-0 flex items-center justify-center">
+        <div className="relative w-[80vw] h-[80vw] sm:w-[70vw] sm:h-[70vw] md:w-[60vw] md:h-[60vw] max-w-[700px] max-h-[700px]">
+          <Image
+            src="/images/logo.png"
+            alt=""
+            fill
+            className="object-contain"
+            style={{ filter: 'invert(1) brightness(2)' }}
+            priority
+          />
+        </div>
       </div>
 
       {/* Floating Kanji characters - hidden on small mobile */}
@@ -173,26 +175,26 @@ export const NoodleHero: React.FC = () => {
       <div className="hero-content relative z-10 text-center px-4 sm:px-6 max-w-6xl mx-auto">
 
         {/* Main title with character animation */}
-        <h1 className="text-[13vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-black leading-[0.9] sm:leading-[0.85] tracking-[-0.04em] text-white mb-6 sm:mb-8"
+        <h1 className="text-[13vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-black leading-[0.9] sm:leading-[0.85] tracking-[-0.04em] text-white mb-6 sm:mb-8 break-words"
           style={{ perspective: '1000px' }}
         >
-          <span className="block overflow-hidden">
+          <span className="block overflow-visible py-2">
             {titleChars.slice(0, 7).map((char, i) => (
-              <span key={i} className="hero-char inline-block" style={{ transformStyle: 'preserve-3d' }}>
+              <span key={i} className="hero-char inline-block will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
                 {char === ' ' ? '\u00A0' : char}
               </span>
             ))}
           </span>
-          <span className="block overflow-hidden">
+          <span className="block overflow-visible py-2">
             {titleChars.slice(8, 11).map((char, i) => (
-              <span key={i} className="hero-char inline-block text-outline" style={{ transformStyle: 'preserve-3d' }}>
+              <span key={i} className="hero-char inline-block text-outline will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
                 {char === ' ' ? '\u00A0' : char}
               </span>
             ))}
           </span>
-          <span className="block overflow-hidden">
+          <span className="block overflow-visible py-2">
             {titleChars.slice(12).map((char, i) => (
-              <span key={i} className="hero-char inline-block" style={{ transformStyle: 'preserve-3d' }}>
+              <span key={i} className="hero-char inline-block will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
                 {char === ' ' ? '\u00A0' : char}
               </span>
             ))}

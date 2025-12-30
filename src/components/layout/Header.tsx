@@ -216,16 +216,16 @@ export const Header: React.FC = () => {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`relative w-10 h-10 flex flex-col items-center justify-center gap-1.5 transition-all duration-200 touch-manipulation rounded ${
-                scrolled
+                mobileMenuOpen || scrolled
                   ? 'text-black hover:bg-black/5 active:bg-black/10'
                   : 'text-white hover:bg-white/10 active:bg-white/20'
               }`}
               aria-label="Toggle menu"
               aria-expanded={mobileMenuOpen}
             >
-              <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-[5px]' : ''}`} />
+              <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
               <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? 'opacity-0 scale-0' : ''}`} />
-              <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-[5px]' : ''}`} />
+              <span className={`block w-5 h-[2px] bg-current transition-all duration-200 ${mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
             </button>
           </div>
         </div>
@@ -234,27 +234,27 @@ export const Header: React.FC = () => {
         {mobileMenuOpen && (
           <div
             ref={menuRef}
-            className="md:hidden overflow-hidden bg-black/90 -mx-4 sm:-mx-6 px-4 sm:px-6 border-t border-white/10"
+            className="md:hidden fixed inset-0 top-14 sm:top-16 bg-white z-50 overflow-y-auto"
           >
-            <div className="py-3 space-y-0.5 max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="py-6 px-4 sm:px-6 space-y-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="mobile-menu-item block px-3 py-3.5 text-sm font-bold tracking-[0.05em] uppercase text-white hover:text-white hover:bg-white/10 active:bg-white/20 rounded transition-all duration-200 touch-manipulation"
+                  className="mobile-menu-item block px-3 py-2.5 text-xs font-bold tracking-[0.05em] uppercase text-black hover:text-black hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                 >
                   {link.label}
                 </Link>
               ))}
 
-              <div className="pt-3 mt-3 border-t border-white/10 space-y-0.5">
+              <div className="pt-3 mt-3 border-t border-black/10 space-y-0.5">
                 {isAuthenticated ? (
                   <>
                     <Link
                       href="/account"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="mobile-menu-item block px-3 py-3.5 text-sm font-bold tracking-[0.05em] uppercase text-white hover:text-white hover:bg-white/10 active:bg-white/20 rounded transition-all duration-200 touch-manipulation"
+                      className="mobile-menu-item block px-3 py-2.5 text-xs font-bold tracking-[0.05em] uppercase text-black hover:text-black hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                     >
                       Account
                     </Link>
@@ -263,7 +263,7 @@ export const Header: React.FC = () => {
                         handleSignOut();
                         setMobileMenuOpen(false);
                       }}
-                      className="mobile-menu-item block w-full text-left px-3 py-3.5 text-sm font-bold tracking-[0.05em] uppercase text-white/70 hover:text-white hover:bg-white/10 active:bg-white/20 rounded transition-all duration-200 touch-manipulation"
+                      className="mobile-menu-item block w-full text-left px-3 py-2.5 text-xs font-bold tracking-[0.05em] uppercase text-black/70 hover:text-black hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                     >
                       Sign Out
                     </button>
@@ -273,14 +273,14 @@ export const Header: React.FC = () => {
                     <Link
                       href="/login"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex-1 py-3.5 text-center text-xs font-bold tracking-[0.15em] uppercase border border-white/30 text-white hover:bg-white/10 active:bg-white/20 rounded transition-all duration-200 touch-manipulation"
+                      className="flex-1 py-3 text-center text-xs font-bold tracking-[0.15em] uppercase border border-black/30 text-black hover:bg-black/5 active:bg-black/10 rounded transition-all duration-200 touch-manipulation"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex-1 py-3.5 text-center text-xs font-bold tracking-[0.15em] uppercase bg-white text-black hover:bg-white/90 active:bg-white/80 rounded transition-all duration-200 touch-manipulation"
+                      className="flex-1 py-3 text-center text-xs font-bold tracking-[0.15em] uppercase bg-black text-white hover:bg-gray-900 active:bg-gray-800 rounded transition-all duration-200 touch-manipulation"
                     >
                       Join Us
                     </Link>

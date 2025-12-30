@@ -103,9 +103,9 @@ export default function RecipesPage() {
           麺
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-48 pt-56">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pt-20 sm:py-20 sm:pt-24">
           {/* Breadcrumb */}
-          <div className="flex items-center gap-3 mb-12 text-sm text-white/60">
+          <div className="flex items-center gap-3 mb-6 text-sm text-white/60">
             <Link href="/" className="hover:text-white transition-colors">
               Home
             </Link>
@@ -114,10 +114,14 @@ export default function RecipesPage() {
           </div>
 
           {/* Animated Title */}
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight leading-none mb-8">
-            {title.split('').map((char, i) => (
-              <span key={i} className="hero-char inline-block" style={{ perspective: '1000px' }}>
-                {char === ' ' ? '\u00A0' : char}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none mb-4 overflow-visible py-2 break-words">
+            {title.split(' ').map((word, wordIndex) => (
+              <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
+                {word.split('').map((char, charIndex) => (
+                  <span key={`${wordIndex}-${charIndex}`} className="hero-char inline-block will-change-transform" style={{ perspective: '1000px' }}>
+                    {char}
+                  </span>
+                ))}
               </span>
             ))}
           </h1>
@@ -128,7 +132,7 @@ export default function RecipesPage() {
           </p>
 
           {/* Scroll Indicator */}
-          <div className="mt-16 flex items-center gap-4 text-sm text-white/60">
+          <div className="mt-8 flex items-center gap-4 text-sm text-white/60">
             <div className="w-px h-16 bg-white/20 animate-pulse" />
             <span className="uppercase tracking-wider">Scroll to explore</span>
           </div>

@@ -12,7 +12,10 @@ gsap.registerPlugin(ScrollTrigger);
 export const FeaturedProducts: React.FC = () => {
   const [products, setProducts] = useState<IProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const autoplayRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -29,6 +32,67 @@ export const FeaturedProducts: React.FC = () => {
 
     fetchProducts();
   }, []);
+
+  // Auto-play carousel
+  useEffect(() => {
+    if (loading || products.length === 0) return;
+
+    const startAutoplay = () => {
+      autoplayRef.current = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % products.length);
+      }, 5000);
+    };
+
+    const stopAutoplay = () => {
+      if (autoplayRef.current) {
+        clearInterval(autoplayRef.current);
+        autoplayRef.current = null;
+      }
+    };
+
+    // Intersection Observer to start/stop autoplay
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            startAutoplay();
+          } else {
+            stopAutoplay();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      stopAutoplay();
+      observer.disconnect();
+    };
+  }, [loading, products]);
+
+  // Scroll to current slide
+  useEffect(() => {
+    if (carouselRef.current && products.length > 0) {
+      const scrollWidth = carouselRef.current.scrollWidth;
+      const itemWidth = scrollWidth / products.length;
+      carouselRef.current.scrollTo({
+        left: itemWidth * currentSlide,
+        behavior: 'smooth',
+      });
+    }
+  }, [currentSlide, products]);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % products.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + products.length) % products.length);
+  };
 
   useEffect(() => {
     if (loading || products.length === 0) return;
@@ -173,7 +237,7 @@ export const FeaturedProducts: React.FC = () => {
       {/* Background accent */}
       <div className="absolute top-0 right-0 w-1/3 h-full bg-gray-50 -skew-x-12 origin-top-right" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full py-12 sm:py-16 md:py-20 lg:py-24">
         {/* Section header */}
         <div className="mb-20">
           <div className="flex items-center gap-8 mb-6">
@@ -181,9 +245,9 @@ export const FeaturedProducts: React.FC = () => {
             <span className="text-sm tracking-[0.3em] text-gray-500 uppercase">Selection</span>
           </div>
 
-          <h2 className="section-title text-6xl md:text-8xl font-black tracking-[-0.04em] text-black overflow-hidden">
+          <h2 className="section-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.04em] text-black overflow-visible py-4 break-words">
             {title.split('').map((char, i) => (
-              <span key={i} className="section-title-char inline-block">
+              <span key={i} className="section-title-char inline-block will-change-transform">
                 {char}
               </span>
             ))}
@@ -195,8 +259,104 @@ export const FeaturedProducts: React.FC = () => {
           </p>
         </div>
 
-        {/* Products grid */}
-        <div className="products-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Mobile carousel */}
+        <div className="md:hidden relative">
+          <div
+            ref={carouselRef}
+            className="overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide pb-4"
+          >
+            <div className="flex gap-6 products-grid pl-[7.5vw] pr-[7.5vw] sm:pl-[15vw] sm:pr-[15vw]">
+              {products.map((product, index) => (
+                <Link
+                  key={product.id}
+                  href={`/shop/${product.slug}`}
+                  className="product-card group block w-[85vw] sm:w-[70vw] snap-center flex-shrink-0"
+                >
+                <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-6">
+                  {product.images?.[0] && (
+                    <Image
+                      src={product.images[0].url}
+                      alt={product.images[0].alt}
+                      fill
+                      className="product-image object-cover"
+                      sizes="85vw"
+                    />
+                  )}
+
+                  <div className="product-overlay absolute inset-0 bg-black/40 opacity-0 flex items-center justify-center">
+                    <span className="text-white text-sm tracking-[0.2em] uppercase border border-white px-6 py-3">
+                      View
+                    </span>
+                  </div>
+
+                  <div className="absolute bottom-4 left-4 text-white/30 text-6xl font-black product-number">
+                    {String(index + 1).padStart(2, '0')}
+                  </div>
+
+                  {product.is_featured && (
+                    <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 text-[10px] tracking-[0.2em] uppercase">
+                      Featured
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-xs tracking-[0.2em] text-gray-400 uppercase">
+                    {product.category.replace('-', ' ')}
+                  </span>
+                  <h3 className="text-lg font-bold text-black group-hover:underline underline-offset-4">
+                    {product.name}
+                  </h3>
+                  <p className="text-2xl font-black text-black">
+                    ${product.price_regular.toFixed(2)}
+                  </p>
+                </div>
+              </Link>
+            ))}
+            </div>
+          </div>
+
+          {/* Navigation Buttons - only show if more than 1 product */}
+          {products.length > 1 && (
+            <>
+              <button
+                onClick={prevSlide}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                aria-label="Previous slide"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={nextSlide}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                aria-label="Next slide"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Scroll indicator dots */}
+              <div className="mt-6 flex justify-center gap-2">
+                {products.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentSlide ? 'bg-black w-8' : 'bg-black/20'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Desktop grid */}
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 products-grid">
           {products.map((product, index) => (
             <Link
               key={product.id}

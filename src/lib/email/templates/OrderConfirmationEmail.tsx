@@ -175,6 +175,15 @@ export const OrderConfirmationEmail = ({
         <div className="container">
           {/* Header */}
           <div className="header">
+            <img
+              src={`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/images/logo.png`}
+              alt="Respect The Technique"
+              style={{
+                maxWidth: '200px',
+                height: 'auto',
+                marginBottom: '20px'
+              }}
+            />
             <h1>RESPECT THE TECHNIQUE</h1>
           </div>
 

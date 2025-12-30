@@ -144,10 +144,10 @@ export default function AboutPage() {
           敬意
         </div>
 
-        <div className="relative py-48 pt-56">
+        <div className="relative py-16 pt-20 sm:py-20 sm:pt-24">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-3 mb-12">
+            <div className="flex items-center gap-3 mb-6">
               <Link href="/" className="text-xs tracking-[0.2em] uppercase text-white/40 hover:text-white transition-colors">
                 Home
               </Link>
@@ -156,25 +156,29 @@ export default function AboutPage() {
             </div>
 
             {/* Title */}
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-[-0.04em] overflow-hidden" style={{ perspective: '1000px' }}>
-              {title.split('').map((char, i) => (
-                <span
-                  key={i}
-                  className="hero-char inline-block"
-                  style={{ transformStyle: 'preserve-3d' }}
-                >
-                  {char === ' ' ? '\u00A0' : char}
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-[-0.04em] overflow-visible py-2 break-words" style={{ perspective: '1000px' }}>
+              {title.split(' ').map((word, wordIndex) => (
+                <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
+                  {word.split('').map((char, charIndex) => (
+                    <span
+                      key={`${wordIndex}-${charIndex}`}
+                      className="hero-char inline-block will-change-transform"
+                      style={{ transformStyle: 'preserve-3d' }}
+                    >
+                      {char}
+                    </span>
+                  ))}
                 </span>
               ))}
             </h1>
 
-            <p className="hero-subtitle mt-8 text-xl md:text-2xl text-white/50 max-w-2xl leading-relaxed">
+            <p className="hero-subtitle mt-4 text-xl md:text-2xl text-white/50 max-w-2xl leading-relaxed">
               Born from a passion for authentic Hakata ramen and a belief that
               great food requires great respect for the craft.
             </p>
 
             {/* Scroll indicator */}
-            <div className="mt-16 flex items-center gap-4">
+            <div className="mt-8 flex items-center gap-4">
               <div className="w-px h-16 bg-white/20" />
               <span className="text-xs tracking-[0.3em] uppercase text-white/30">Scroll to explore</span>
             </div>
@@ -196,7 +200,7 @@ export default function AboutPage() {
                 <span className="text-sm tracking-[0.3em] text-gray-500 uppercase">The Beginning</span>
               </div>
 
-              <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] text-black leading-[0.9]">
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.04em] text-black leading-[0.9] break-words">
                 FROM
                 <br />
                 HAKATA TO
@@ -319,7 +323,7 @@ export default function AboutPage() {
               <div className="h-px bg-black/20 w-16" />
             </div>
 
-            <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] text-black">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.04em] text-black break-words">
               WHAT WE
               <br />
               <span className="text-outline-black">STAND FOR</span>
@@ -362,7 +366,7 @@ export default function AboutPage() {
               <div className="h-px bg-black/20 w-16" />
             </div>
 
-            <h2 className="text-5xl md:text-6xl font-black tracking-[-0.04em] text-black">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-[-0.04em] text-black break-words">
               OUR
               <br />
               <span className="text-outline-black">FOUNDERS</span>

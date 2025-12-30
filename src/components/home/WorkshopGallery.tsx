@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
+
+interface WorkshopGalleryState {
+  currentSlide: number;
+}
 
 const workshopImages = [
   {
@@ -28,7 +32,10 @@ const workshopImages = [
 ];
 
 export const WorkshopGallery: React.FC = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const autoplayRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -88,11 +95,70 @@ export const WorkshopGallery: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
+  // Auto-play carousel
+  useEffect(() => {
+    const startAutoplay = () => {
+      autoplayRef.current = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % workshopImages.length);
+      }, 5000);
+    };
+
+    const stopAutoplay = () => {
+      if (autoplayRef.current) {
+        clearInterval(autoplayRef.current);
+        autoplayRef.current = null;
+      }
+    };
+
+    // Intersection Observer to start/stop autoplay
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            startAutoplay();
+          } else {
+            stopAutoplay();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      stopAutoplay();
+      observer.disconnect();
+    };
+  }, []);
+
+  // Scroll to current slide
+  useEffect(() => {
+    if (carouselRef.current) {
+      const scrollWidth = carouselRef.current.scrollWidth;
+      const itemWidth = scrollWidth / workshopImages.length;
+      carouselRef.current.scrollTo({
+        left: itemWidth * currentSlide,
+        behavior: 'smooth',
+      });
+    }
+  }, [currentSlide]);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % workshopImages.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + workshopImages.length) % workshopImages.length);
+  };
+
   const title = 'BEHIND THE SCENES';
 
   return (
     <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 sm:py-16 md:py-20 lg:py-24">
         {/* Header */}
         <div className="mb-20 text-center">
           <div className="flex items-center justify-center gap-6 mb-8">
@@ -101,22 +167,93 @@ export const WorkshopGallery: React.FC = () => {
             <div className="h-px bg-black/20 w-16" />
           </div>
 
-          <h2 className="gallery-title text-5xl md:text-7xl font-black tracking-[-0.04em] text-black mb-6 overflow-hidden">
+          <h2 className="gallery-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-[-0.04em] text-black mb-6 overflow-visible py-2 break-words">
             {title.split('').map((char, i) => (
-              <span key={i} className="gallery-title-char inline-block">
+              <span key={i} className="gallery-title-char inline-block will-change-transform">
                 {char === ' ' ? '\u00A0' : char}
               </span>
             ))}
           </h2>
 
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Experience the art of traditional ramen making. Watch our students
             transform from curious beginners to confident noodle masters.
           </p>
         </div>
 
-        {/* Gallery Grid */}
-        <div className="gallery-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Mobile carousel */}
+        <div className="lg:hidden relative">
+          <div
+            ref={carouselRef}
+            className="overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide pb-4"
+          >
+            <div className="flex gap-4 gallery-grid pl-[12.5vw] pr-[12.5vw] sm:pl-[20vw] sm:pr-[20vw] md:pl-[27.5vw] md:pr-[27.5vw]">
+            {workshopImages.map((image, index) => (
+              <div
+                key={index}
+                className="gallery-item group relative aspect-[3/4] bg-gray-100 overflow-hidden cursor-pointer w-[75vw] sm:w-[60vw] md:w-[45vw] snap-center flex-shrink-0"
+              >
+                <div className="gallery-image absolute inset-0">
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    sizes="75vw"
+                  />
+                </div>
+
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300" />
+
+                <div className="absolute bottom-4 left-4 text-white/40 group-hover:text-white/80 text-5xl font-black transition-colors duration-300">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+              </div>
+            ))}
+            </div>
+          </div>
+
+          {/* Navigation Buttons - only show if more than 1 image */}
+          {workshopImages.length > 1 && (
+            <>
+              <button
+                onClick={prevSlide}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                aria-label="Previous slide"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={nextSlide}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                aria-label="Next slide"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Scroll indicator dots */}
+              <div className="mt-6 flex justify-center gap-2">
+                {workshopImages.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentSlide ? 'bg-black w-8' : 'bg-black/20'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Desktop grid */}
+        <div className="hidden lg:grid lg:grid-cols-4 gap-4 gallery-grid">
           {workshopImages.map((image, index) => (
             <div
               key={index}

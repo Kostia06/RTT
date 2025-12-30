@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { generateTimeTrackingQR } from '@/lib/qrcode';
 
@@ -21,8 +21,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
     }
 
-    // Fetch the QR token from settings
-    const { data: settingData, error: settingError } = await supabase
+    // Use service client to fetch from settings table (bypasses RLS)
+    const serviceSupabase = createServiceClient();
+    const { data: settingData, error: settingError } = await serviceSupabase
       .from('settings')
       .select('value')
       .eq('key', 'time_tracking_qr_token')
@@ -71,19 +72,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
     }
 
-    // Generate new UUID token
-    const { data: newTokenData, error: updateError } = await supabase
-      .rpc('gen_random_uuid');
+    // Generate new UUID token using crypto API
+    const newToken = crypto.randomUUID();
 
-    if (updateError) {
-      console.error('Error generating UUID:', updateError);
-      return NextResponse.json({ error: 'Failed to generate new token' }, { status: 500 });
-    }
-
-    const newToken = newTokenData;
-
-    // Update settings table
-    const { error: settingError } = await supabase
+    // Use service client to update settings table (bypasses RLS)
+    const serviceSupabase = createServiceClient();
+    const { error: settingError } = await serviceSupabase
       .from('settings')
       .update({ value: `"${newToken}"` })
       .eq('key', 'time_tracking_qr_token');

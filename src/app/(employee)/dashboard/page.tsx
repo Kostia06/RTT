@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-import { BsQrCode } from 'react-icons/bs';
 import {
   FiArchive,
   FiBarChart2,
@@ -140,14 +139,18 @@ export default function EmployeeDashboard() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-20 sm:pt-24 pb-12 sm:pb-16">
-        <div className="relative py-16 sm:py-20 md:py-24">
+      <div ref={heroRef} className="relative bg-black text-white pt-16 sm:pt-20 pb-12 sm:pb-16">
+        <div className="relative py-12 sm:py-14 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-4 break-words">
-              {title.split('').map((char, i) => (
-                <span key={i} className="hero-title-char inline-block">
-                  {char === ' ' ? '\u00A0' : char}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-2 break-words overflow-visible py-2">
+              {title.split(' ').map((word, wordIndex) => (
+                <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
+                  {word.split('').map((char, charIndex) => (
+                    <span key={`${wordIndex}-${charIndex}`} className="hero-title-char inline-block will-change-transform">
+                      {char}
+                    </span>
+                  ))}
                 </span>
               ))}
             </h1>
@@ -162,8 +165,9 @@ export default function EmployeeDashboard() {
 
 
       {/* Quick Actions */}
-      <div className="py-12 sm:py-16 md:py-20 bg-white">
+      <div className="py-12 sm:py-16 md:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-black mb-6">QUICK ACTIONS</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1">
             {/* Communication Section */}
             <div className="lg:col-span-2">
@@ -180,39 +184,21 @@ export default function EmployeeDashboard() {
               description="View and respond to customer inquiries."
               icon={<FiMail size={32} />}
             />
-            <ActionCard
-              href="/clock-in"
-              title="Quick Clock In/Out"
-              description="Track your work hours."
-              icon={<FiClock size={32} />}
-            />
-            <ActionCard
-              href="/time-tracking"
-              title="Time Tracking"
-              description="View your timesheet."
-              icon={<FiCalendar size={32} />}
-            />
-            <ActionCard
-              href="/schedule"
-              title="My Schedule"
-              description="View your upcoming shifts."
-              icon={<FiCalendar size={32} />}
-            />
+            <div className="lg:col-span-2">
+              <ActionCard
+                href="/time-tracking"
+                title="Time Tracking & Schedule"
+                description="Clock in/out, add manual entries, view your timesheet, and see your upcoming shifts."
+                icon={<FiClock size={32} />}
+              />
+            </div>
             {isAdmin && (
-              <>
-                <ActionCard
-                  href="/admin/qr-codes"
-                  title="QR Code Management"
-                  description="Generate and manage QR codes."
-                  icon={<BsQrCode size={32} />}
-                />
-                <ActionCard
-                  href="/admin/users"
-                  title="Manage Users"
-                  description="Manage user accounts and permissions."
-                  icon={<FiUsers size={32} />}
-                />
-              </>
+              <ActionCard
+                href="/admin/users"
+                title="Manage Users"
+                description="Manage user accounts and permissions."
+                icon={<FiUsers size={32} />}
+              />
             )}
             <div className="lg:col-span-2">
               <ActionCard

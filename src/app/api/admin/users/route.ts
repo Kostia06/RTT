@@ -44,6 +44,7 @@ export async function GET() {
       email: u.email,
       name: u.user_metadata?.name || 'N/A',
       role: u.user_metadata?.role || 'customer',
+      payRate: u.user_metadata?.payRate || 0,
       created_at: u.created_at,
       banned: false, // TODO: Implement banned_until field in user metadata
       banned_until: null,

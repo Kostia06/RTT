@@ -131,7 +131,7 @@ function ClockInContent() {
             Back
           </Link>
 
-          <h1 className="hero-title text-4xl md:text-6xl font-black mb-3 overflow-hidden">
+          <h1 className="hero-title text-4xl md:text-6xl font-black mb-3 overflow-visible py-2">
             TIME CLOCK
           </h1>
           <p className="text-white/60">

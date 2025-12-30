@@ -72,7 +72,7 @@ export const Newsletter: React.FC = () => {
         />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative py-12 sm:py-16 md:py-20 lg:py-24">
         <div className="newsletter-content text-center">
           <div className="flex items-center justify-center gap-6 mb-8">
             <div className="h-px bg-black/20 w-16" />
@@ -97,19 +97,19 @@ export const Newsletter: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="max-w-md mx-auto">
-              <div className="flex">
+              <div className="flex flex-nowrap">
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="flex-1 px-6 py-4 bg-white border-2 border-r-0 border-black focus:outline-none text-black placeholder-gray-400"
+                  className="flex-1 px-3 sm:px-6 py-3 sm:py-4 bg-white border-2 border-r-0 border-black focus:outline-none text-black placeholder-gray-400 text-sm sm:text-base"
                 />
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="px-8 py-4 bg-black text-white font-bold text-sm tracking-[0.1em] uppercase hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  className="px-4 sm:px-8 py-3 sm:py-4 bg-black text-white font-bold text-xs sm:text-sm tracking-[0.1em] uppercase hover:bg-gray-800 transition-colors disabled:opacity-50 whitespace-nowrap"
                 >
                   {status === 'loading' ? '...' : 'Join'}
                 </button>

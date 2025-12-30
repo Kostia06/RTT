@@ -300,6 +300,61 @@ export async function POST(request: Request) {
       });
     }
 
+    if (action === 'manualEntry') {
+      const { clockIn, clockOut, notes } = body;
+
+      if (!clockIn || !clockOut) {
+        return NextResponse.json({ error: 'Clock in and clock out times are required' }, { status: 400 });
+      }
+
+      const clockInTime = new Date(clockIn);
+      const clockOutTime = new Date(clockOut);
+
+      // Calculate total hours
+      const totalMinutes = Math.floor((clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60));
+      const totalHours = Math.round((totalMinutes / 60) * 100) / 100;
+
+      if (totalHours < 0) {
+        return NextResponse.json({ error: 'Clock out time must be after clock in time' }, { status: 400 });
+      }
+
+      // Create manual time entry
+      const { data: newEntry, error: insertError } = await supabase
+        .from('time_entries')
+        .insert({
+          employee_id: effectiveEmployeeId,
+          employee_name: employeeName,
+          clock_in: clockInTime.toISOString(),
+          clock_out: clockOutTime.toISOString(),
+          total_hours: totalHours,
+          notes: notes || '',
+          is_manual: true,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating manual entry:', insertError);
+        return NextResponse.json({ error: 'Failed to create manual entry' }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        entry: {
+          id: newEntry.id,
+          employeeId: newEntry.employee_id,
+          employeeName: newEntry.employee_name,
+          clockIn: newEntry.clock_in,
+          clockOut: newEntry.clock_out,
+          totalHours: newEntry.total_hours,
+          date: newEntry.clock_in.split('T')[0],
+          notes: newEntry.notes || '',
+          isManual: newEntry.is_manual,
+        },
+        message: 'Manual entry created successfully',
+      });
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Error processing time entry:', error);

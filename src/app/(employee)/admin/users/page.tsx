@@ -10,6 +10,7 @@ interface User {
   email: string;
   name: string;
   role: string;
+  payRate?: number;
   created_at: string;
   banned: boolean;
   banned_until: string | null;
@@ -25,6 +26,8 @@ export default function AdminUsersPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [filter, setFilter] = useState<'all' | 'admin' | 'employee' | 'customer' | 'banned'>('all');
+  const [editingPayRateId, setEditingPayRateId] = useState<string | null>(null);
+  const [editingPayRate, setEditingPayRate] = useState<string>('');
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || !isAdmin)) {
@@ -148,6 +151,49 @@ export default function AdminUsersPage() {
     }
   };
 
+  const updatePayRate = async (userId: string) => {
+    try {
+      const payRate = parseFloat(editingPayRate);
+      if (isNaN(payRate) || payRate < 0) {
+        setError('Invalid pay rate. Must be a positive number.');
+        setTimeout(() => setError(''), 3000);
+        return;
+      }
+
+      const response = await fetch(`/api/admin/users/${userId}/pay-rate`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payRate }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccessMessage(`Pay rate updated successfully`);
+        fetchUsers();
+        setEditingPayRateId(null);
+        setEditingPayRate('');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setError(data.error || 'Failed to update pay rate');
+        setTimeout(() => setError(''), 3000);
+      }
+    } catch (err) {
+      setError('Failed to update pay rate');
+      console.error('Error updating pay rate:', err);
+    }
+  };
+
+  const startEditPayRate = (userId: string, currentRate: number) => {
+    setEditingPayRateId(userId);
+    setEditingPayRate(currentRate?.toString() || '0');
+  };
+
+  const cancelEditPayRate = () => {
+    setEditingPayRateId(null);
+    setEditingPayRate('');
+  };
+
   if (isLoading || loading) {
     return (
       <div className="min-h-screen bg-white pt-24 flex items-center justify-center">
@@ -171,13 +217,17 @@ export default function AdminUsersPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-20 sm:pt-24 pb-12 sm:pb-16">
-        <div className="relative py-16 sm:py-20 md:py-24">
+      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-16 sm:pt-20 pb-12 sm:pb-16">
+        <div className="relative py-12 sm:py-14 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-4 break-words">
-              {title.split('').map((char, i) => (
-                <span key={i} className="hero-title-char inline-block">
-                  {char === ' ' ? '\u00A0' : char}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-2 break-words overflow-visible py-2">
+              {title.split(' ').map((word, wordIndex) => (
+                <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
+                  {word.split('').map((char, charIndex) => (
+                    <span key={`${wordIndex}-${charIndex}`} className="hero-title-char inline-block will-change-transform">
+                      {char}
+                    </span>
+                  ))}
                 </span>
               ))}
             </h1>
@@ -245,6 +295,9 @@ export default function AdminUsersPage() {
                     <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                       Role
                     </th>
+                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      Pay Rate
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                       Status
                     </th>
@@ -283,6 +336,62 @@ export default function AdminUsersPage() {
                             <option value="employee">Employee</option>
                             <option value="admin">Admin</option>
                           </select>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          {u.role !== 'customer' ? (
+                            editingPayRateId === u.id ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-sm font-bold">$</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={editingPayRate}
+                                  onChange={(e) => setEditingPayRate(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      updatePayRate(u.id);
+                                    } else if (e.key === 'Escape') {
+                                      cancelEditPayRate();
+                                    }
+                                  }}
+                                  className="w-20 px-2 py-1 border-2 border-black rounded text-right font-bold text-sm"
+                                  autoFocus
+                                />
+                                <span className="text-xs text-gray-600">/hr</span>
+                                <button
+                                  onClick={() => updatePayRate(u.id)}
+                                  className="p-1 text-green-600 hover:text-green-800"
+                                  title="Save"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={cancelEditPayRate}
+                                  className="p-1 text-red-600 hover:text-red-800"
+                                  title="Cancel"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => startEditPayRate(u.id, u.payRate || 0)}
+                                className="text-sm font-black text-green-600 hover:text-green-800 transition-colors group"
+                              >
+                                ${u.payRate?.toFixed(2) || '0.00'}/hr
+                                <svg className="w-3 h-3 inline ml-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              </button>
+                            )
+                          ) : (
+                            <span className="text-sm text-gray-400">N/A</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {u.banned ? (

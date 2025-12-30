@@ -90,7 +90,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left Side - Hero Section */}
-      <div ref={heroRef} className="lg:w-1/2 bg-black text-white pt-20 sm:pt-24 pb-12 sm:pb-16 lg:pb-0 relative overflow-hidden flex items-center">
+      <div ref={heroRef} className="lg:w-1/2 bg-black text-white pt-16 sm:pt-20 pb-12 sm:pb-16 lg:pb-0 relative overflow-hidden flex items-center">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-[0.02]"
           style={{
@@ -110,7 +110,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="relative z-10 max-w-xl mx-auto px-4 sm:px-6 lg:px-12 w-full">
-          <Link href="/" className="hero-back-link inline-block mb-12 text-white/50 hover:text-white transition-colors text-xs tracking-[0.2em] uppercase group">
+          <Link href="/" className="hero-back-link inline-block mb-8 text-white/50 hover:text-white transition-colors text-xs tracking-[0.2em] uppercase group">
             <span className="inline-flex items-center gap-2">
               <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -119,10 +119,14 @@ export default function RegisterPage() {
             </span>
           </Link>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-[-0.04em] mb-6 leading-[0.9]">
-            {title.split('').map((char, i) => (
-              <span key={i} className="hero-title-char inline-block">
-                {char === ' ' ? '\u00A0' : char}
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-[-0.04em] mb-3 leading-[0.9] overflow-visible py-2">
+            {title.split(' ').map((word, wordIndex) => (
+              <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
+                {word.split('').map((char, charIndex) => (
+                  <span key={`${wordIndex}-${charIndex}`} className="hero-title-char inline-block will-change-transform">
+                    {char}
+                  </span>
+                ))}
               </span>
             ))}
           </h1>

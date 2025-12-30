@@ -116,12 +116,80 @@ interface PasswordResetData {
 }
 
 export async function sendPasswordReset(data: PasswordResetData) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #000;">Reset Your Password</h1>
-      <p>You requested to reset your password.</p>
-      <a href="${data.resetUrl}">Reset Password</a>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          margin: 0;
+          padding: 0;
+          background-color: #f5f5f5;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+        }
+        .header {
+          background-color: #000;
+          color: #fff;
+          padding: 40px 20px;
+          text-align: center;
+        }
+        .content {
+          padding: 40px 20px;
+        }
+        .button {
+          display: inline-block;
+          padding: 14px 28px;
+          background-color: #000;
+          color: #fff;
+          text-decoration: none;
+          font-weight: bold;
+          margin: 20px 0;
+        }
+        .footer {
+          background-color: #f5f5f5;
+          padding: 30px 20px;
+          text-align: center;
+          font-size: 14px;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <img src="${baseUrl}/images/logo.png" alt="Respect The Technique" style="max-width: 200px; height: auto; margin-bottom: 20px;" />
+          <h1>RESPECT THE TECHNIQUE</h1>
+        </div>
+        <div class="content">
+          <h2 style="color: #000;">Reset Your Password</h2>
+          <p>You requested to reset your password for your Respect The Technique account.</p>
+          <p>Click the button below to create a new password:</p>
+          <div style="text-align: center;">
+            <a href="${data.resetUrl}" class="button">Reset Password</a>
+          </div>
+          <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            If you didn't request this password reset, you can safely ignore this email.
+          </p>
+          <p style="font-size: 14px; color: #666;">
+            This link will expire in 1 hour for security reasons.
+          </p>
+        </div>
+        <div class="footer">
+          <p style="margin: 0 0 10px 0;"><strong>Respect The Technique</strong></p>
+          <p style="margin: 5px 0;">Authentic Ramen & Japanese Cuisine</p>
+          <p style="margin: 5px 0;">Edmonton, Alberta, Canada</p>
+        </div>
+      </div>
+    </body>
+    </html>
   `;
 
   await sendEmail({
@@ -138,11 +206,104 @@ interface WelcomeEmailData {
 }
 
 export async function sendWelcomeEmail(data: WelcomeEmailData) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1>Welcome to Respect The Technique!</h1>
-      <p>Hi ${data.name},</p>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          margin: 0;
+          padding: 0;
+          background-color: #f5f5f5;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+        }
+        .header {
+          background-color: #000;
+          color: #fff;
+          padding: 40px 20px;
+          text-align: center;
+        }
+        .content {
+          padding: 40px 20px;
+        }
+        .button {
+          display: inline-block;
+          padding: 14px 28px;
+          background-color: #000;
+          color: #fff;
+          text-decoration: none;
+          font-weight: bold;
+          margin: 20px 0;
+        }
+        .feature-list {
+          background-color: #f9f9f9;
+          padding: 20px;
+          border-left: 4px solid #000;
+          margin: 20px 0;
+        }
+        .feature-list ul {
+          margin: 10px 0;
+          padding-left: 20px;
+        }
+        .feature-list li {
+          margin: 8px 0;
+        }
+        .footer {
+          background-color: #f5f5f5;
+          padding: 30px 20px;
+          text-align: center;
+          font-size: 14px;
+          color: #666;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <img src="${baseUrl}/images/logo.png" alt="Respect The Technique" style="max-width: 200px; height: auto; margin-bottom: 20px;" />
+          <h1>RESPECT THE TECHNIQUE</h1>
+        </div>
+        <div class="content">
+          <h2 style="color: #000;">Welcome to Respect The Technique!</h2>
+          <p>Hi ${data.name},</p>
+          <p>Thank you for creating an account with us! We're excited to have you join our community of ramen enthusiasts.</p>
+
+          <div class="feature-list">
+            <p style="margin-top: 0; font-weight: bold;">What you can do now:</p>
+            <ul>
+              <li>Browse our authentic ramen products and ingredients</li>
+              <li>Explore traditional recipes and cooking techniques</li>
+              <li>Place orders for pickup or delivery</li>
+              <li>Track your order history and preferences</li>
+            </ul>
+          </div>
+
+          <p>Ready to get started?</p>
+          <div style="text-align: center;">
+            <a href="${baseUrl}/shop" class="button">Start Shopping</a>
+          </div>
+
+          <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            If you have any questions, feel free to reach out to us at
+            <a href="mailto:support@respectthetechnique.com" style="color: #000;">support@respectthetechnique.com</a>
+          </p>
+        </div>
+        <div class="footer">
+          <p style="margin: 0 0 10px 0;"><strong>Respect The Technique</strong></p>
+          <p style="margin: 5px 0;">Authentic Ramen & Japanese Cuisine</p>
+          <p style="margin: 5px 0;">Edmonton, Alberta, Canada</p>
+        </div>
+      </div>
+    </body>
+    </html>
   `;
 
   await sendEmail({

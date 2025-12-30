@@ -99,7 +99,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
           <div className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 font-medium tracking-wider mb-3">
             {product.category.replace('-', ' ').toUpperCase()}
           </div>
-          <h1 className="text-3xl md:text-4xl font-black text-black tracking-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-black tracking-tight break-words">
             {product.name}
           </h1>
           <p className="mt-3 text-lg text-gray-600">{product.description}</p>

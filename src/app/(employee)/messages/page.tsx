@@ -31,7 +31,7 @@ export default function MessagesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
       {/* Header */}
-      <div className="bg-black text-white pt-20 sm:pt-24 pb-12">
+      <div className="bg-black text-white pt-16 sm:pt-20 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             href="/dashboard"

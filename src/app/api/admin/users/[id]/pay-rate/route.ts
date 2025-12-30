@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -28,7 +28,7 @@ export async function PATCH(
       );
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     if (!userId) {
       return NextResponse.json(

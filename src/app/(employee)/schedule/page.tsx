@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import gsap from 'gsap';
 import { format } from 'date-fns';
+import { Plus } from 'lucide-react';
+import { ProductionItem, ShiftProductionAssignment } from '@/types/production';
+import CreateShiftFullPageModal from '@/components/schedule/CreateShiftFullPageModal';
 
 interface Shift {
   id: string;
@@ -16,31 +18,21 @@ interface Shift {
   position: string;
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
+  productionAssignments?: (ShiftProductionAssignment & { production_item: ProductionItem })[];
 }
 
 export default function SchedulePage() {
   const { user, isAuthenticated, isEmployee, isAdmin, isLoading } = useAuth();
   const router = useRouter();
-  const heroRef = useRef<HTMLDivElement>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || !isEmployee)) {
       router.push('/dashboard');
     }
   }, [isAuthenticated, isEmployee, isLoading, router]);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '.hero-title-char',
-        { y: 80, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, stagger: 0.02, ease: 'power3.out', delay: 0.2 }
-      );
-    }, heroRef);
-    return () => ctx.revert();
-  }, []);
 
   useEffect(() => {
     if (isAuthenticated && isEmployee) {
@@ -51,8 +43,8 @@ export default function SchedulePage() {
   const fetchShifts = async () => {
     try {
       const url = isAdmin
-        ? '/api/employee/schedule'
-        : `/api/employee/schedule?employeeId=${user?.id}`;
+        ? '/api/employee/schedule?includeProduction=true'
+        : `/api/employee/schedule?employeeId=${user?.id}&includeProduction=true`;
       const response = await fetch(url);
       const data = await response.json();
       if (response.ok) {
@@ -96,7 +88,6 @@ export default function SchedulePage() {
 
   if (!isAuthenticated || !isEmployee) return null;
 
-  const title = 'SCHEDULE';
   const upcomingShifts = shifts.filter(s => new Date(s.startTime) > new Date());
   const statusColors = {
     scheduled: 'bg-yellow-100 text-yellow-800',
@@ -107,31 +98,41 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-16 sm:pt-20 pb-12 sm:pb-16">
-        <div className="relative py-12 sm:py-14 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-xs uppercase tracking-wider mb-4 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Dashboard
-            </Link>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-4 break-words">
-              {title.split('').map((char, i) => (
-                <span key={i} className="hero-title-char inline-block">
-                  {char === ' ' ? '\u00A0' : char}
-                </span>
-              ))}
-            </h1>
-            <p className="text-sm sm:text-base text-white/60 max-w-2xl">
-              View {isAdmin ? 'all' : 'your'} upcoming shifts and schedule
-            </p>
+      <div className="bg-black text-white pt-16 sm:pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors mb-6">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </Link>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white text-black flex items-center justify-center">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">SCHEDULE</h1>
+                <p className="text-white/60 text-sm mt-1">View {isAdmin ? 'all' : 'your'} upcoming shifts</p>
+              </div>
+            </div>
+            {isAdmin && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-white text-black px-4 py-2 hover:bg-gray-200 transition-colors flex items-center gap-2 text-sm font-bold"
+              >
+                <Plus className="w-4 h-4" />
+                Create Shift
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Upcoming Shifts Summary */}
-      <div className="py-12 bg-gray-50 border-b border-gray-200">
+      <div className="py-12 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 shadow-sm">
@@ -189,6 +190,20 @@ export default function SchedulePage() {
                     {shift.notes && (
                       <p className="text-sm text-gray-600 mt-2 italic">{shift.notes}</p>
                     )}
+                    {shift.productionAssignments && shift.productionAssignments.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-2">Production Tasks:</p>
+                        <div className="space-y-1">
+                          {shift.productionAssignments.map((assignment) => (
+                            <div key={assignment.id} className="text-sm text-gray-700 flex items-center gap-2">
+                              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                              <span className="font-medium">{assignment.production_item?.name || 'Unknown Item'}</span>
+                              <span className="text-gray-500">- {assignment.bins_required} bins ({assignment.target_portions} portions)</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {shift.status === 'scheduled' && !isAdmin && (
@@ -211,6 +226,17 @@ export default function SchedulePage() {
           </div>
         </div>
       </div>
+
+      {/* Create Shift Modal */}
+      {showCreateModal && (
+        <CreateShiftFullPageModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchShifts();
+          }}
+        />
+      )}
     </div>
   );
 }

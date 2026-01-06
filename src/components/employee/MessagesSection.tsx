@@ -6,9 +6,15 @@ import { ContactMessage } from '@/types/message';
 export default function MessagesSection() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'new' | 'read' | 'archived'>('all');
+  const [filter, setFilter] = useState<'all' | 'new' | 'read' | 'archived'>('new');
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  const [newsletterSubject, setNewsletterSubject] = useState('');
+  const [newsletterMessage, setNewsletterMessage] = useState('');
+  const [sendingNewsletter, setSendingNewsletter] = useState(false);
+  const [newsletterError, setNewsletterError] = useState<string | null>(null);
+  const [newsletterSuccess, setNewsletterSuccess] = useState(false);
 
   useEffect(() => {
     fetchMessages();
@@ -80,6 +86,45 @@ export default function MessagesSection() {
     }
   };
 
+  const sendNewsletterBroadcast = async () => {
+    if (!newsletterSubject.trim() || !newsletterMessage.trim()) {
+      setNewsletterError('Subject and message are required');
+      return;
+    }
+
+    setSendingNewsletter(true);
+    setNewsletterError(null);
+
+    try {
+      const response = await fetch('/api/newsletter/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: newsletterSubject,
+          message: newsletterMessage,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send newsletter');
+      }
+
+      setNewsletterSuccess(true);
+      setTimeout(() => {
+        setShowNewsletterModal(false);
+        setNewsletterSubject('');
+        setNewsletterMessage('');
+        setNewsletterSuccess(false);
+      }, 2000);
+    } catch (error: any) {
+      setNewsletterError(error.message);
+    } finally {
+      setSendingNewsletter(false);
+    }
+  };
+
   const newMessagesCount = messages.filter(m => m.status === 'new').length;
   const filteredMessages = filter === 'all' ? messages : messages.filter(m => m.status === filter);
 
@@ -107,6 +152,15 @@ export default function MessagesSection() {
               </p>
             </div>
           </div>
+          <button
+            onClick={() => setShowNewsletterModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Newsletter Broadcast
+          </button>
         </div>
 
         {/* Filters */}
@@ -313,6 +367,102 @@ export default function MessagesSection() {
           )}
         </div>
       </div>
+
+      {/* Newsletter Broadcast Modal */}
+      {showNewsletterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+              <div>
+                <h3 className="text-xl font-black text-black">Newsletter Broadcast</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Send an email to all newsletter subscribers
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowNewsletterModal(false);
+                  setNewsletterError(null);
+                  setNewsletterSuccess(false);
+                }}
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {newsletterSuccess ? (
+                <div className="bg-green-50 border-2 border-green-500 p-6 text-center">
+                  <svg className="w-12 h-12 text-green-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <p className="text-lg font-bold text-green-900">Newsletter Sent Successfully!</p>
+                  <p className="text-sm text-green-700 mt-2">Your message has been sent to all subscribers.</p>
+                </div>
+              ) : (
+                <>
+                  {newsletterError && (
+                    <div className="bg-red-50 border-2 border-red-500 p-4">
+                      <p className="text-sm font-bold text-red-900">{newsletterError}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-2">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      value={newsletterSubject}
+                      onChange={(e) => setNewsletterSubject(e.target.value)}
+                      placeholder="Enter email subject"
+                      className="w-full px-4 py-3 border-2 border-gray-300 focus:border-black focus:outline-none"
+                      disabled={sendingNewsletter}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-black mb-2">
+                      Message
+                    </label>
+                    <textarea
+                      value={newsletterMessage}
+                      onChange={(e) => setNewsletterMessage(e.target.value)}
+                      placeholder="Enter your message to newsletter subscribers"
+                      rows={8}
+                      className="w-full px-4 py-3 border-2 border-gray-300 focus:border-black focus:outline-none resize-none"
+                      disabled={sendingNewsletter}
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={sendNewsletterBroadcast}
+                      disabled={sendingNewsletter || !newsletterSubject.trim() || !newsletterMessage.trim()}
+                      className="flex-1 px-6 py-3 bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {sendingNewsletter ? 'Sending...' : 'Send Newsletter'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowNewsletterModal(false);
+                        setNewsletterError(null);
+                      }}
+                      disabled={sendingNewsletter}
+                      className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-bold hover:border-black transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

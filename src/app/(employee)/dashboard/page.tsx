@@ -21,6 +21,7 @@ import {
   FiTruck,
   FiUsers,
 } from 'react-icons/fi';
+import { QrCode, Thermometer, FileText, Package2 } from 'lucide-react';
 import { ActionCard } from '@/components/employee/ActionCard';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -143,7 +144,7 @@ export default function EmployeeDashboard() {
         <div className="relative py-12 sm:py-14 md:py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-2 break-words overflow-visible py-2">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-4 break-words overflow-visible py-2">
               {title.split(' ').map((word, wordIndex) => (
                 <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
                   {word.split('').map((char, charIndex) => (
@@ -155,9 +156,29 @@ export default function EmployeeDashboard() {
               ))}
             </h1>
 
-            <p className="text-sm sm:text-base text-white/60 max-w-2xl break-words">
-              Welcome back, <span className="inline-block">{user?.user_metadata?.name || 'Team Member'}</span>
+            <p className="text-sm sm:text-base text-white/60 max-w-2xl break-words mb-8">
+              Welcome back, <span className="inline-block font-bold text-white">{user?.user_metadata?.name || 'Team Member'}</span>
             </p>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+              <div className="stat-card bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-lg">
+                <div className="text-3xl font-black text-white mb-1">{stats.ordersToday}</div>
+                <div className="text-xs text-white/60 uppercase tracking-wider">Orders Today</div>
+              </div>
+              <div className="stat-card bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-lg">
+                <div className="text-3xl font-black text-white mb-1">{stats.ordersThisWeek}</div>
+                <div className="text-xs text-white/60 uppercase tracking-wider">This Week</div>
+              </div>
+              <div className="stat-card bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-lg">
+                <div className="text-3xl font-black text-white mb-1">{newMessagesCount}</div>
+                <div className="text-xs text-white/60 uppercase tracking-wider">New Messages</div>
+              </div>
+              <div className="stat-card bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-lg">
+                <div className="text-3xl font-black text-green-400 mb-1">Active</div>
+                <div className="text-xs text-white/60 uppercase tracking-wider">Status</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -165,92 +186,173 @@ export default function EmployeeDashboard() {
 
 
       {/* Quick Actions */}
-      <div className="py-12 sm:py-16 md:py-20 bg-gray-50">
+      <div className="py-12 sm:py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-black mb-6">QUICK ACTIONS</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1">
-            {/* Communication Section */}
-            <div className="lg:col-span-2">
+          {/* Primary Actions */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-black mb-6 uppercase tracking-tight">Daily Operations</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <ActionCard
+                href="/today"
+                title="Today"
+                description="View today's orders, what to make, and your shift details."
+                icon={<FiCalendar size={32} />}
+                badge={null}
+              />
+              <ActionCard
+                href="/time-tracking"
+                title="Time Tracking & Schedule"
+                description="Clock in/out, add manual entries, view your timesheet, and see your upcoming shifts."
+                icon={<FiClock size={32} />}
+                badge={null}
+              />
+              <ActionCard
+                href="/messages"
+                title="Customer Messages"
+                description="View and respond to customer inquiries."
+                icon={<FiMail size={32} />}
+                badge={newMessagesCount > 0 ? newMessagesCount : null}
+              />
+            </div>
+          </div>
+
+          {/* Operations Section */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-black mb-6 uppercase tracking-tight">Operations & Tools</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <ActionCard
                 href="/ai-assistant"
                 title="AI Assistant"
                 description="Get instant help with products, recipes, and operations."
                 icon={<FiCpu size={32} />}
               />
-            </div>
-            <ActionCard
-              href="/messages"
-              title="Customer Messages"
-              description="View and respond to customer inquiries."
-              icon={<FiMail size={32} />}
-            />
-            <div className="lg:col-span-2">
-              <ActionCard
-                href="/time-tracking"
-                title="Time Tracking & Schedule"
-                description="Clock in/out, add manual entries, view your timesheet, and see your upcoming shifts."
-                icon={<FiClock size={32} />}
-              />
-            </div>
-            {isAdmin && (
-              <ActionCard
-                href="/admin/users"
-                title="Manage Users"
-                description="Manage user accounts and permissions."
-                icon={<FiUsers size={32} />}
-              />
-            )}
-            <div className="lg:col-span-2">
               <ActionCard
                 href="/orders"
                 title="Manage Orders"
                 description="View, process, and update order status."
                 icon={<FiPackage size={32} />}
               />
+              <ActionCard
+                href="/manage-content"
+                title="Manage Content"
+                description="Manage products and recipes."
+                icon={<FiBookOpen size={32} />}
+              />
+              <ActionCard
+                href="/inventory"
+                title="Shop Inventory"
+                description="Monitor retail product stock levels."
+                icon={<FiPackage size={32} />}
+              />
+              <ActionCard
+                href="/inventory-advanced"
+                title="Suppliers & Restock"
+                description="Manage suppliers and create restock orders."
+                icon={<FiTruck size={32} />}
+              />
+              <ActionCard
+                href="/reports"
+                title="View Reports"
+                description="Access sales reports and analytics."
+                icon={<FiBarChart2 size={32} />}
+              />
             </div>
-            <ActionCard
-              href="/inventory"
-              title="Check Inventory"
-              description="Monitor stock levels and update quantities."
-              icon={<FiArchive size={32} />}
-            />
-            <ActionCard
-              href="/manage-recipes"
-              title="Manage Recipes"
-              description="Create, edit, and publish recipes."
-              icon={<FiBookOpen size={32} />}
-            />
-            <ActionCard
-              href="/inventory-advanced"
-              title="Suppliers & Restock"
-              description="Manage suppliers and create restock orders."
-              icon={<FiTruck size={32} />}
-            />
-            <ActionCard
-              href="/reports"
-              title="View Reports"
-              description="Access sales reports and analytics."
-              icon={<FiBarChart2 size={32} />}
-            />
-            <ActionCard
-              href="/account"
-              title="Account Settings"
-              description="Update your profile and preferences."
-              icon={<FiSettings size={32} />}
-            />
+          </div>
+
+          {/* Fridges & Storage */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-black mb-6 uppercase tracking-tight">Fridges & Storage</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <ActionCard
+                href="/fridges"
+                title="Fridges Hub"
+                description="Central hub for all fridge operations and inventory."
+                icon={<FiArchive size={32} />}
+              />
+              <ActionCard
+                href="/scan-fridge"
+                title="Scan QR Code"
+                description="Quick fridge access and temperature logging."
+                icon={<QrCode size={32} />}
+              />
+              {isAdmin && (
+                <ActionCard
+                  href="/manage-fridges"
+                  title="Manage Fridges"
+                  description="Add, edit, or remove storage units."
+                  icon={<Thermometer size={32} />}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Production Management */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-black mb-6 uppercase tracking-tight">Production Management</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <ActionCard
+                href="/production"
+                title="Production"
+                description="View today's assignments and production history."
+                icon={<Package2 size={32} />}
+              />
+              <ActionCard
+                href="/production-logs"
+                title="Production Logs"
+                description="View and export historical production data."
+                icon={<FileText size={32} />}
+              />
+              {isAdmin && (
+                <ActionCard
+                  href="/manage-production-items"
+                  title="Production Setup"
+                  description="Manage production items and recipes."
+                  icon={<FiPackage size={32} />}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Admin & Settings */}
+          <div>
+            <h2 className="text-2xl font-black mb-6 uppercase tracking-tight">
+              {isAdmin ? 'Admin & Settings' : 'Settings'}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {isAdmin && (
+                <ActionCard
+                  href="/admin/users"
+                  title="Manage Users"
+                  description="Manage user accounts, roles, and pay rates."
+                  icon={<FiUsers size={32} />}
+                />
+              )}
+              <ActionCard
+                href="/account"
+                title="Account Settings"
+                description="Update your profile and preferences."
+                icon={<FiSettings size={32} />}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Sign Out */}
-      <div className="py-12 sm:py-16 bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <button
-            onClick={handleSignOut}
-            className="inline-block px-8 py-4 border-2 border-black text-black text-xs font-bold tracking-[0.2em] uppercase hover:bg-black hover:text-white transition-all duration-300"
-          >
-            Sign Out
-          </button>
+      <div className="py-12 sm:py-16 bg-white border-t-2 border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-8 bg-white rounded-lg border-2 border-gray-200">
+            <div>
+              <h3 className="text-xl font-black mb-2">Need to leave?</h3>
+              <p className="text-sm text-gray-600">Remember to clock out if you&apos;re done for the day.</p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="px-8 py-4 border-2 border-black bg-black text-white text-xs font-bold tracking-wider uppercase hover:bg-white hover:text-black transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
     </div>

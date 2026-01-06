@@ -37,10 +37,29 @@ export const Newsletter: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, source: 'website' }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to subscribe');
+      }
+
       setStatus('success');
       setEmail('');
-    }, 1000);
+    } catch (error: any) {
+      console.error('Newsletter signup error:', error);
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 3000);
+    }
   };
 
   return (
@@ -94,6 +113,11 @@ export const Newsletter: React.FC = () => {
             <div className="bg-black text-white py-6 px-8 inline-block">
               <p className="text-lg font-bold tracking-wide">Welcome to the family.</p>
               <p className="text-white/60 text-sm mt-1">Check your inbox for confirmation.</p>
+            </div>
+          ) : status === 'error' ? (
+            <div className="bg-red-600 text-white py-6 px-8 inline-block">
+              <p className="text-lg font-bold tracking-wide">Oops! Something went wrong.</p>
+              <p className="text-white/60 text-sm mt-1">Please try again.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="max-w-md mx-auto">

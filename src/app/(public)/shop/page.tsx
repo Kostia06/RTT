@@ -13,8 +13,9 @@ gsap.registerPlugin(ScrollTrigger);
 
 const categories = [
   { id: '', label: 'All', kanji: '全' },
-  { id: 'ramen-bowl', label: 'Bowls', kanji: '麺' },
-  { id: 'retail-product', label: 'Retail', kanji: '品' },
+  { id: 'ramen-noodles', label: 'Noodles', kanji: '麺' },
+  { id: 'sauces', label: 'Sauces', kanji: '味' },
+  { id: 'ramen-bowl', label: 'Bowls', kanji: '丼' },
   { id: 'merchandise', label: 'Merch', kanji: '物' },
 ];
 
@@ -139,14 +140,18 @@ function ShopContent() {
     }, 500);
   };
 
-  const handleUpdateQuantity = (e: React.MouseEvent, productId: string, newQuantity: number) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const getCartItemId = (productId: string): string => {
+    // Cart item ID format: ${productId}-default (for products without variants)
+    return `${productId}-default`;
+  };
 
+  const handleUpdateQuantity = (productId: string, newQuantity: number) => {
+    const cartItemId = getCartItemId(productId);
+    console.log('handleUpdateQuantity called:', { productId, cartItemId, newQuantity });
     if (newQuantity === 0) {
-      removeFromCart(productId);
+      removeFromCart(cartItemId);
     } else {
-      updateQuantity(productId, newQuantity);
+      updateQuantity(cartItemId, newQuantity);
     }
   };
 
@@ -215,7 +220,11 @@ function ShopContent() {
               {categories.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleCategoryChange(cat.id);
+                  }}
+                  type="button"
                   className={`relative px-4 sm:px-5 py-2 text-[11px] sm:text-xs font-bold tracking-[0.12em] uppercase transition-all duration-200 whitespace-nowrap touch-manipulation flex-shrink-0 ${
                     selectedCategory === cat.id
                       ? 'bg-black text-white'
@@ -251,7 +260,11 @@ function ShopContent() {
                 Try selecting a different category.
               </p>
               <button
-                onClick={() => handleCategoryChange('')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleCategoryChange('');
+                }}
+                type="button"
                 className="px-6 py-3 bg-black text-white text-xs font-bold tracking-[0.15em] uppercase hover:bg-gray-800 transition-colors"
               >
                 View All
@@ -318,45 +331,71 @@ function ShopContent() {
                     )}
 
                     {/* Add to Cart Controls */}
-                    {(() => {
-                      const quantity = getProductQuantity(product.id);
-                      return quantity > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => handleUpdateQuantity(e, product.id, quantity - 1)}
-                            className="w-8 h-8 bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center font-bold"
+                    <div>
+                      {(() => {
+                        const quantity = getProductQuantity(product.id);
+                        return quantity > 0 ? (
+                          <div
+                            className="flex items-center gap-2"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
                           >
-                            {quantity === 1 ? (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            ) : (
-                              <span>−</span>
-                            )}
-                          </button>
-                          <span className="px-4 py-2 bg-gray-100 text-black font-bold text-sm min-w-[60px] text-center">
-                            {quantity}
-                          </span>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleUpdateQuantity(product.id, quantity - 1);
+                              }}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              className="w-8 h-8 bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center font-bold"
+                              type="button"
+                            >
+                              {quantity === 1 ? (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              ) : (
+                                <span>−</span>
+                              )}
+                            </button>
+                            <span className="px-4 py-2 bg-gray-100 text-black font-bold text-sm min-w-[60px] text-center">
+                              {quantity}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleUpdateQuantity(product.id, quantity + 1);
+                              }}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              className="w-8 h-8 bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center font-bold"
+                              type="button"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={(e) => handleUpdateQuantity(e, product.id, quantity + 1)}
-                            className="w-8 h-8 bg-black text-white hover:bg-gray-800 transition-colors flex items-center justify-center font-bold"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleAddToCart(e, product);
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className={`w-full py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                              addingProduct === product.id
+                                ? 'bg-green-500 text-white'
+                                : 'bg-black text-white hover:bg-gray-800'
+                            }`}
+                            type="button"
                           >
-                            +
+                            {addingProduct === product.id ? 'Added!' : 'Add to Cart'}
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => handleAddToCart(e, product)}
-                          className={`w-full py-2 text-xs font-bold uppercase tracking-wider transition-all ${
-                            addingProduct === product.id
-                              ? 'bg-green-500 text-white'
-                              : 'bg-black text-white hover:bg-gray-800'
-                          }`}
-                        >
-                          {addingProduct === product.id ? 'Added!' : 'Add to Cart'}
-                        </button>
-                      );
-                    })()}
+                        );
+                      })()}
+                    </div>
                   </div>
                 </Link>
               ))}

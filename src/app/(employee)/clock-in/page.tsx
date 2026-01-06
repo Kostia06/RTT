@@ -1,12 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
 import EmployeeSelector from '@/components/time-tracking/EmployeeSelector';
 import ClockInOutButton from '@/components/time-tracking/ClockInOutButton';
-import gsap from 'gsap';
 import { format } from 'date-fns';
 
 interface TimeEntry {
@@ -24,7 +23,6 @@ function ClockInContent() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const heroRef = useRef<HTMLDivElement>(null);
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string>('');
@@ -36,26 +34,6 @@ function ClockInContent() {
   const isQRMode = searchParams?.get('qr') === 'true';
   const qrToken = searchParams?.get('token');
 
-  useEffect(() => {
-    // GSAP hero animation
-    const ctx = gsap.context(() => {
-      const title = heroRef.current?.querySelector('.hero-title');
-      if (title) {
-        const text = title.textContent || '';
-        const chars = text.split('');
-        title.innerHTML = chars.map(char =>
-          char === ' ' ? ' ' : `<span class="hero-title-char inline-block">${char}</span>`
-        ).join('');
-
-        gsap.fromTo('.hero-title-char',
-          { y: 80, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.8, stagger: 0.02, ease: 'power3.out', delay: 0.2 }
-        );
-      }
-    }, heroRef);
-
-    return () => ctx.revert();
-  }, []);
 
   useEffect(() => {
     // If manual mode and user is logged in, auto-select them
@@ -118,9 +96,9 @@ function ClockInContent() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section ref={heroRef} className="bg-black text-white py-12 pt-24">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="bg-black text-white pt-16 sm:pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
             href="/dashboard"
             className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors mb-6"
@@ -128,17 +106,23 @@ function ClockInContent() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+            Back to Dashboard
           </Link>
-
-          <h1 className="hero-title text-4xl md:text-6xl font-black mb-3 overflow-visible py-2">
-            TIME CLOCK
-          </h1>
-          <p className="text-white/60">
-            {isQRMode ? 'Select your name to continue' : 'Track your work hours'}
-          </p>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white text-black flex items-center justify-center">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">TIME CLOCK</h1>
+              <p className="text-white/60 text-sm mt-1">
+                {isQRMode ? 'Select your name to continue' : 'Track your work hours'}
+              </p>
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* Main Content */}
       <section className="py-12">

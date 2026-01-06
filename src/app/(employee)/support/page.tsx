@@ -52,30 +52,29 @@ export default function SupportPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-16 sm:pt-20 pb-12 sm:pb-16">
-        <div className="relative py-12 sm:py-14 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-xs uppercase tracking-wider mb-4 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              Back to Dashboard
-            </Link>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-2 break-words overflow-visible py-2">
-              {title.split(' ').map((word, wordIndex) => (
-                <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
-                  {word.split('').map((char, charIndex) => (
-                    <span key={`${wordIndex}-${charIndex}`} className="hero-title-char inline-block will-change-transform">
-                      {char}
-                    </span>
-                  ))}
-                </span>
-              ))}
-            </h1>
-            <p className="text-sm sm:text-base text-white/60 max-w-2xl">Respond to customer inquiries and support tickets</p>
+      <div className="bg-black text-white pt-16 sm:pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors mb-6">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white text-black flex items-center justify-center">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">SUPPORT</h1>
+              <p className="text-white/60 text-sm mt-1">Respond to customer inquiries and support tickets</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="py-8 bg-gray-50 border-b border-gray-200">
+      <div className="py-8 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap gap-2">
             {['all', 'open', 'in-progress', 'resolved'].map((f) => (

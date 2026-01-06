@@ -105,35 +105,30 @@ export default function InventoryAdvancedPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-16 sm:pt-20 pb-12 sm:pb-16">
-        <div className="relative py-12 sm:py-14 md:py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-xs uppercase tracking-wider mb-4 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      <div ref={heroRef} className="relative bg-black text-white overflow-hidden pt-16 sm:pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm mb-6 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white text-black flex items-center justify-center">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              Back to Dashboard
-            </Link>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-2 break-words overflow-visible py-2">
-              {title.split(' ').map((word, wordIndex) => (
-                <span key={wordIndex} className="block overflow-visible py-0.5 whitespace-nowrap">
-                  {word.split('').map((char, charIndex) => (
-                    <span key={`${wordIndex}-${charIndex}`} className="hero-title-char inline-block will-change-transform">
-                      {char}
-                    </span>
-                  ))}
-                </span>
-              ))}
-            </h1>
-            <p className="text-sm sm:text-base text-white/60 max-w-2xl">
-              Manage suppliers and create restock orders
-            </p>
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">SUPPLIERS</h1>
+              <p className="text-white/60 text-sm mt-1">Manage suppliers and restock orders</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="py-8 bg-gray-50 border-b border-gray-200">
+      <div className="py-8 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-2">
             <button

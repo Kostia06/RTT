@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -8,7 +8,23 @@ import { useCart } from '@/components/providers/CartProvider';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Button, Input } from '@/components/ui';
 
-type CheckoutStep = 'information' | 'shipping' | 'payment';
+type CheckoutStep = 'information' | 'payment';
+
+interface Shift {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  startTime: string;
+  endTime: string;
+  position: string;
+  status: string;
+}
+
+interface PickupDateInfo {
+  date: string;
+  earliestTime: string;
+  latestTime: string;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -16,21 +32,74 @@ export default function CheckoutPage() {
   const { isAuthenticated, user } = useAuth();
   const [step, setStep] = useState<CheckoutStep>('information');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [availablePickupDates, setAvailablePickupDates] = useState<PickupDateInfo[]>([]);
 
   const [formData, setFormData] = useState({
     email: user?.email || '',
     firstName: '',
     lastName: '',
-    address: '',
-    apartment: '',
-    city: '',
-    province: 'Alberta',
-    postalCode: '',
     phone: '',
-    saveInfo: true,
+    deliveryType: 'pickup' as 'pickup' | 'delivery',
+    pickupDate: '',
+    deliveryAddress: '',
+    deliveryCity: '',
+    deliveryPostalCode: '',
+    deliveryInstructions: '',
+    paymentMethod: 'in-store' as 'in-store' | 'online',
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Fetch available pickup dates from schedule
+  useEffect(() => {
+    const fetchPickupDates = async () => {
+      try {
+        const response = await fetch('/api/employee/schedule');
+        if (response.ok) {
+          const data = await response.json();
+          const shifts: Shift[] = data.shifts || [];
+
+          // Group shifts by date and calculate time ranges
+          const dateMap = new Map<string, { earliest: Date; latest: Date }>();
+
+          shifts.forEach(shift => {
+            const shiftStart = new Date(shift.startTime);
+            const shiftEnd = new Date(shift.endTime);
+
+            // Only include future shifts
+            if (shiftStart > new Date()) {
+              const dateKey = shiftStart.toISOString().split('T')[0];
+
+              if (!dateMap.has(dateKey)) {
+                dateMap.set(dateKey, { earliest: shiftStart, latest: shiftEnd });
+              } else {
+                const existing = dateMap.get(dateKey)!;
+                if (shiftStart < existing.earliest) {
+                  existing.earliest = shiftStart;
+                }
+                if (shiftEnd > existing.latest) {
+                  existing.latest = shiftEnd;
+                }
+              }
+            }
+          });
+
+          // Convert to PickupDateInfo array
+          const pickupDates: PickupDateInfo[] = Array.from(dateMap.entries()).map(([date, times]) => ({
+            date,
+            earliestTime: times.earliest.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            latestTime: times.latest.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          })).sort((a, b) => a.date.localeCompare(b.date));
+
+          setAvailablePickupDates(pickupDates);
+        }
+      } catch (error) {
+        console.error('Error fetching pickup dates:', error);
+      }
+    };
+
+    fetchPickupDates();
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -40,12 +109,80 @@ export default function CheckoutPage() {
 
   const handleSubmitInformation = (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('shipping');
+    if (formData.paymentMethod === 'in-store') {
+      // Skip payment step and complete the order
+      handleCompleteOrder();
+    } else {
+      setStep('payment');
+    }
   };
 
-  const handleSubmitShipping = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStep('payment');
+  const handleCompleteOrder = async () => {
+    setIsProcessing(true);
+
+    try {
+      // Generate order number
+      const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
+
+      // Get pickup time range (only for pickup orders)
+      const selectedDateInfo = availablePickupDates.find(d => d.date === formData.pickupDate);
+      const pickupTimeRange = selectedDateInfo
+        ? `${selectedDateInfo.earliestTime} - ${selectedDateInfo.latestTime}`
+        : '';
+
+      // Prepare order items
+      const orderItems = state.items.map(item => ({
+        name: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      // Prepare order data
+      const orderData: any = {
+        orderNumber,
+        customerName: `${formData.firstName} ${formData.lastName}`,
+        customerEmail: formData.email,
+        customerPhone: formData.phone,
+        total: total,
+        status: 'pending',
+        items: orderItems,
+        paymentMethod: formData.paymentMethod,
+        paymentStatus: formData.paymentMethod === 'online' ? 'paid' : 'pending',
+        deliveryType: formData.deliveryType,
+      };
+
+      // Add pickup or delivery specific fields
+      if (formData.deliveryType === 'pickup') {
+        orderData.pickupDate = formData.pickupDate;
+        orderData.pickupTime = pickupTimeRange;
+      } else {
+        orderData.deliveryAddress = formData.deliveryAddress;
+        orderData.deliveryCity = formData.deliveryCity;
+        orderData.deliveryPostalCode = formData.deliveryPostalCode;
+        orderData.deliveryInstructions = formData.deliveryInstructions;
+      }
+
+      // Create order
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      // Clear cart and redirect to success page
+      clearCart();
+      router.push('/checkout/success');
+    } catch (error) {
+      console.error('Error creating order:', error);
+      alert('Failed to create order. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   const handleSubmitPayment = async (e: React.FormEvent) => {
@@ -53,9 +190,8 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     // Simulate payment processing - replace with Square integration
-    setTimeout(() => {
-      clearCart();
-      router.push('/checkout/success');
+    setTimeout(async () => {
+      await handleCompleteOrder();
     }, 2000);
   };
 
@@ -83,10 +219,6 @@ export default function CheckoutPage() {
             <div className="flex items-center gap-4 mb-8 text-sm">
               <span className={`font-medium ${step === 'information' ? 'text-black' : 'text-gray-500'}`}>
                 Information
-              </span>
-              <span className="text-gray-300">→</span>
-              <span className={`font-medium ${step === 'shipping' ? 'text-black' : 'text-gray-500'}`}>
-                Shipping
               </span>
               <span className="text-gray-300">→</span>
               <span className={`font-medium ${step === 'payment' ? 'text-black' : 'text-gray-500'}`}>
@@ -119,7 +251,7 @@ export default function CheckoutPage() {
                       required
                     />
 
-                    <h3 className="text-lg font-bold mt-8 mb-4">Shipping Address</h3>
+                    <h3 className="text-lg font-bold mt-8 mb-4">Customer Information</h3>
 
                     <div className="grid grid-cols-2 gap-4">
                       <Input
@@ -139,121 +271,219 @@ export default function CheckoutPage() {
                     </div>
 
                     <Input
-                      label="Address"
-                      name="address"
-                      value={formData.address}
+                      label="Phone"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleInputChange}
                       required
                     />
 
-                    <Input
-                      label="Apartment, suite, etc. (optional)"
-                      name="apartment"
-                      value={formData.apartment}
-                      onChange={handleInputChange}
-                    />
+                    <h3 className="text-lg font-bold mt-8 mb-4">Order Type</h3>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="City"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        required
-                      />
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Province
-                        </label>
-                        <select
-                          name="province"
-                          value={formData.province}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
-                        >
-                          <option value="Alberta">Alberta</option>
-                          <option value="British Columbia">British Columbia</option>
-                          <option value="Ontario">Ontario</option>
-                          <option value="Quebec">Quebec</option>
-                        </select>
-                      </div>
+                    <div className="space-y-3 mb-6">
+                      <label className={`flex items-center justify-between p-4 border-2 cursor-pointer transition-colors ${
+                        formData.deliveryType === 'pickup'
+                          ? 'border-black bg-gray-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="deliveryType"
+                            value="pickup"
+                            checked={formData.deliveryType === 'pickup'}
+                            onChange={handleInputChange}
+                            className="w-4 h-4"
+                          />
+                          <div>
+                            <span className="font-bold">Pickup</span>
+                            <p className="text-sm text-gray-500">Pick up your order at our location</p>
+                          </div>
+                        </div>
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                      </label>
+
+                      <label className={`flex items-center justify-between p-4 border-2 cursor-pointer transition-colors ${
+                        formData.deliveryType === 'delivery'
+                          ? 'border-black bg-gray-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="deliveryType"
+                            value="delivery"
+                            checked={formData.deliveryType === 'delivery'}
+                            onChange={handleInputChange}
+                            className="w-4 h-4"
+                          />
+                          <div>
+                            <span className="font-bold">Local Delivery</span>
+                            <p className="text-sm text-gray-500">We&apos;ll deliver to your address</p>
+                          </div>
+                        </div>
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                        </svg>
+                      </label>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Postal Code"
-                        name="postalCode"
-                        value={formData.postalCode}
-                        onChange={handleInputChange}
-                        required
-                      />
-                      <Input
-                        label="Phone"
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        required
-                      />
+                    {formData.deliveryType === 'pickup' ? (
+                      <>
+                        <h3 className="text-lg font-bold mb-4">Pickup Details</h3>
+
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-4">
+                          <p className="text-sm text-blue-900">
+                            Select a date when our staff will be available.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Pickup Date *
+                          </label>
+                          <select
+                            name="pickupDate"
+                            value={formData.pickupDate}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
+                            required
+                          >
+                            <option value="">Select a date</option>
+                            {availablePickupDates.map(dateInfo => (
+                              <option key={dateInfo.date} value={dateInfo.date}>
+                                {new Date(dateInfo.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {formData.pickupDate && (
+                          <div className="p-4 bg-green-50 border border-green-200 rounded mt-4">
+                            <div className="flex items-center gap-2 mb-1">
+                              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className="text-sm font-bold text-green-900">Pickup Time Window</span>
+                            </div>
+                            <p className="text-sm text-green-800 ml-7">
+                              {availablePickupDates.find(d => d.date === formData.pickupDate)?.earliestTime} - {availablePickupDates.find(d => d.date === formData.pickupDate)?.latestTime}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-bold mb-4">Delivery Address</h3>
+
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-4">
+                          <p className="text-sm text-blue-900">
+                            We deliver locally. Please provide your delivery address.
+                          </p>
+                        </div>
+
+                        <div className="space-y-4">
+                          <Input
+                            label="Street Address"
+                            name="deliveryAddress"
+                            value={formData.deliveryAddress}
+                            onChange={handleInputChange}
+                            required={formData.deliveryType === 'delivery'}
+                          />
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <Input
+                              label="City"
+                              name="deliveryCity"
+                              value={formData.deliveryCity}
+                              onChange={handleInputChange}
+                              required={formData.deliveryType === 'delivery'}
+                            />
+                            <Input
+                              label="Postal Code"
+                              name="deliveryPostalCode"
+                              value={formData.deliveryPostalCode}
+                              onChange={handleInputChange}
+                              placeholder="A1A 1A1"
+                              required={formData.deliveryType === 'delivery'}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Delivery Instructions (Optional)
+                            </label>
+                            <textarea
+                              name="deliveryInstructions"
+                              value={formData.deliveryInstructions}
+                              onChange={handleInputChange}
+                              className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
+                              rows={3}
+                              placeholder="e.g., Leave at front door, ring doorbell"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <h3 className="text-lg font-bold mt-8 mb-4">Payment Method</h3>
+
+                    <div className="space-y-3">
+                      <label className={`flex items-center justify-between p-4 border-2 cursor-pointer transition-colors ${
+                        formData.paymentMethod === 'in-store'
+                          ? 'border-black bg-gray-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="in-store"
+                            checked={formData.paymentMethod === 'in-store'}
+                            onChange={handleInputChange}
+                            className="w-4 h-4"
+                          />
+                          <div>
+                            <span className="font-bold">Pay in Store</span>
+                            <p className="text-sm text-gray-500">Pay when you pick up your order</p>
+                          </div>
+                        </div>
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </label>
+
+                      <label className={`flex items-center justify-between p-4 border-2 cursor-pointer transition-colors ${
+                        formData.paymentMethod === 'online'
+                          ? 'border-black bg-gray-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="online"
+                            checked={formData.paymentMethod === 'online'}
+                            onChange={handleInputChange}
+                            className="w-4 h-4"
+                          />
+                          <div>
+                            <span className="font-bold">Pay Online</span>
+                            <p className="text-sm text-gray-500">Pay now with credit card</p>
+                          </div>
+                        </div>
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                      </label>
                     </div>
                   </div>
 
-                  <Button type="submit" variant="primary" size="lg" className="w-full mt-8">
-                    CONTINUE TO SHIPPING
-                  </Button>
-                </form>
-              )}
-
-              {/* Shipping Step */}
-              {step === 'shipping' && (
-                <form onSubmit={handleSubmitShipping}>
-                  <button
-                    type="button"
-                    onClick={() => setStep('information')}
-                    className="text-sm text-gray-600 hover:text-black mb-6"
-                  >
-                    ← Back to information
-                  </button>
-
-                  <h2 className="text-xl font-bold mb-6">Shipping Method</h2>
-
-                  <div className="space-y-3">
-                    <label className="flex items-center justify-between p-4 border-2 border-black bg-gray-50 cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="shipping"
-                          value="standard"
-                          defaultChecked
-                          className="w-4 h-4"
-                        />
-                        <div>
-                          <span className="font-medium">Standard Shipping</span>
-                          <p className="text-sm text-gray-500">5-7 business days</p>
-                        </div>
-                      </div>
-                      <span className="font-bold text-green-600">FREE</span>
-                    </label>
-
-                    <label className="flex items-center justify-between p-4 border border-gray-300 cursor-pointer hover:border-gray-400">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="shipping"
-                          value="express"
-                          className="w-4 h-4"
-                        />
-                        <div>
-                          <span className="font-medium">Express Shipping</span>
-                          <p className="text-sm text-gray-500">2-3 business days</p>
-                        </div>
-                      </div>
-                      <span className="font-bold">$12.00</span>
-                    </label>
-                  </div>
-
-                  <Button type="submit" variant="primary" size="lg" className="w-full mt-8">
-                    CONTINUE TO PAYMENT
+                  <Button type="submit" variant="primary" size="lg" className="w-full mt-8" disabled={isProcessing}>
+                    {isProcessing ? 'PROCESSING...' : formData.paymentMethod === 'in-store' ? 'COMPLETE ORDER' : 'CONTINUE TO PAYMENT'}
                   </Button>
                 </form>
               )}
@@ -263,10 +493,10 @@ export default function CheckoutPage() {
                 <form onSubmit={handleSubmitPayment}>
                   <button
                     type="button"
-                    onClick={() => setStep('shipping')}
+                    onClick={() => setStep('information')}
                     className="text-sm text-gray-600 hover:text-black mb-6"
                   >
-                    ← Back to shipping
+                    ← Back to information
                   </button>
 
                   <h2 className="text-xl font-bold mb-6">Payment</h2>
@@ -359,10 +589,6 @@ export default function CheckoutPage() {
                   <span className="font-medium">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="font-medium text-green-600">FREE</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-600">GST (5%)</span>
                   <span className="font-medium">${tax.toFixed(2)}</span>
                 </div>
@@ -370,6 +596,14 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
                     <span>${total.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="pt-3 mt-3 border-t border-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-blue-900 bg-blue-50 p-3 rounded">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-medium">Choose pickup or local delivery</span>
                   </div>
                 </div>
               </div>

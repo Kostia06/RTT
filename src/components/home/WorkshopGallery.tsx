@@ -218,7 +218,7 @@ export const WorkshopGallery: React.FC = () => {
             <>
               <button
                 onClick={prevSlide}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
                 aria-label="Previous slide"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@ export const WorkshopGallery: React.FC = () => {
               </button>
               <button
                 onClick={nextSlide}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
                 aria-label="Next slide"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,16 +236,18 @@ export const WorkshopGallery: React.FC = () => {
               </button>
 
               {/* Scroll indicator dots */}
-              <div className="mt-6 flex justify-center gap-2">
+              <div className="mt-6 flex justify-center gap-1">
                 {workshopImages.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentSlide ? 'bg-black w-8' : 'bg-black/20'
-                    }`}
+                    className="p-3 touch-manipulation"
                     aria-label={`Go to slide ${index + 1}`}
-                  />
+                  >
+                    <span className={`block rounded-full transition-all ${
+                      index === currentSlide ? 'bg-black w-8 h-2' : 'bg-black/40 w-2 h-2'
+                    }`} />
+                  </button>
                 ))}
               </div>
             </>

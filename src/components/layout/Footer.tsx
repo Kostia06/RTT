@@ -152,9 +152,9 @@ export const Footer: React.FC = () => {
 
   return (
     <footer id="contact" ref={footerRef} className="bg-black text-white relative overflow-hidden">
-      {/* Large background text */}
-      <div className="absolute bottom-0 left-0 right-0 pointer-events-none overflow-hidden">
-        <span className="footer-bg-text block text-[25vw] font-black text-white/[0.02] leading-none whitespace-nowrap">
+      {/* Large background text - decorative only */}
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <span className="footer-bg-text block text-[25vw] font-black text-white/[0.03] leading-none whitespace-nowrap">
           RESPECT THE TECHNIQUE
         </span>
       </div>
@@ -168,7 +168,7 @@ export const Footer: React.FC = () => {
           {/* Contact Info */}
           <div className="footer-column">
             <div className="inline-block mb-4 sm:mb-6">
-              <span className="text-xs tracking-[0.3em] uppercase text-white/40">Get in Touch</span>
+              <span className="text-xs tracking-[0.3em] uppercase text-white/60">Get in Touch</span>
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[-0.02em] mb-6 sm:mb-8">
               LET&apos;S <span className="text-outline-white">TALK</span>
@@ -451,16 +451,16 @@ export const Footer: React.FC = () => {
         <div className="mt-10 sm:mt-12 md:mt-16 pt-6 sm:pt-8 border-t border-white/10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
             <div className="flex flex-col items-center md:items-start gap-2">
-              <p className="text-white/30 text-xs tracking-[0.1em] text-center md:text-left">
+              <p className="text-white/60 text-xs tracking-[0.1em] text-center md:text-left">
                 &copy; {currentYear} RESPECT THE TECHNIQUE. ALL RIGHTS RESERVED.
               </p>
-              <p className="text-white/20 text-xs">
+              <p className="text-white/50 text-xs">
                 Created by{' '}
                 <a
                   href="https://github.com/Kostia06"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white/40 hover:text-white/60 transition-colors underline underline-offset-2"
+                  className="text-white/70 hover:text-white transition-colors underline underline-offset-2"
                 >
                   Kostia
                 </a>
@@ -468,10 +468,10 @@ export const Footer: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <span className="text-xs text-white/20 tracking-[0.15em] uppercase">Made with patience</span>
+              <span className="text-xs text-white/50 tracking-[0.15em] uppercase">Made with patience</span>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-xs text-white/40">Open Now</span>
+                <span className="text-xs text-white/60">Open Now</span>
               </div>
             </div>
           </div>

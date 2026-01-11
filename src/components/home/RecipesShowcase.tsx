@@ -338,16 +338,18 @@ export const RecipesShowcase: React.FC = () => {
                   </button>
 
                   {/* Scroll indicator dots */}
-                  <div className="mt-6 flex justify-center gap-2">
+                  <div className="mt-6 flex justify-center gap-1">
                     {otherRecipes.slice(0, 3).map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentSlide(index)}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          index === currentSlide ? 'bg-white w-8' : 'bg-white/20'
-                        }`}
+                        className="p-3 touch-manipulation"
                         aria-label={`Go to slide ${index + 1}`}
-                      />
+                      >
+                        <span className={`block rounded-full transition-all ${
+                          index === currentSlide ? 'bg-white w-8 h-2' : 'bg-white/40 w-2 h-2'
+                        }`} />
+                      </button>
                     ))}
                   </div>
                 </>

@@ -213,7 +213,7 @@ function ShopContent() {
       </div>
 
       {/* Category Filter */}
-      <div ref={filterBarRef} className="sticky top-14 sm:top-16 z-20 bg-white border-b border-black/5">
+      <div ref={filterBarRef} className="sticky top-16 sm:top-20 z-20 bg-white border-b border-black/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-5 gap-4">
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide flex-1 -mx-4 px-4 sm:mx-0 sm:px-0">

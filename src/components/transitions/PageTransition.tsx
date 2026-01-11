@@ -25,8 +25,8 @@ export const usePageTransition = () => {
   return context;
 };
 
-const NUM_COLUMNS = 5;
-const NUM_ROWS = 4;
+const NUM_COLUMNS = 8;
+const NUM_ROWS = 3;
 
 export const PageTransition = ({ children, variant = 'grid' }: PageTransitionProps) => {
   const pathname = usePathname();

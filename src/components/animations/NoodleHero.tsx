@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Link from 'next/link';
+import { TransitionLink } from '@/components/transitions';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -155,18 +155,18 @@ export const NoodleHero: React.FC = () => {
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4 sm:px-0">
-          <Link
+          <TransitionLink
             href="/shop"
             className="hero-cta group relative px-8 sm:px-10 py-4 bg-white text-black font-semibold text-sm tracking-[0.1em] uppercase overflow-hidden transition-all duration-300 hover:bg-accent hover:text-white"
           >
             <span className="relative z-10">Shop Now</span>
-          </Link>
-          <Link
+          </TransitionLink>
+          <TransitionLink
             href="/recipes"
             className="hero-cta group relative px-8 sm:px-10 py-4 border border-white/50 text-white font-semibold text-sm tracking-[0.1em] uppercase overflow-hidden transition-all duration-300 hover:bg-white hover:text-black hover:border-white"
           >
             <span className="relative z-10">Browse Recipes</span>
-          </Link>
+          </TransitionLink>
         </div>
       </div>
 

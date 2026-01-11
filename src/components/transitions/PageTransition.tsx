@@ -17,6 +17,32 @@ interface TransitionContextType {
 
 const TransitionContext = createContext<TransitionContextType | null>(null);
 
+// ============================================
+// TRANSITION ANIMATION CONFIGURATION
+// ============================================
+export const TRANSITION_CONFIG = {
+  // Grid dimensions
+  grid: {
+    columns: 1,
+    rows: 3,
+  },
+  // Animation timing (in seconds)
+  timing: {
+    rectangleDuration: 1,    // How long each rectangle animates
+    rectangleDelay: 0.025,      // Delay between each rectangle
+    contentFadeDelay: 1,      // Delay before content fades in
+  },
+  // Easing curve [cubic-bezier]
+  easing: [0.76, 0, 0.24, 1] as const,
+  // Duration limits (in milliseconds)
+  durations: {
+    grid: { enter: 1000, exit: 700 },
+    logo: { enter: 1200, exit: 800 },
+    default: { enter: 800, exit: 600 },
+  },
+} as const;
+// ============================================
+
 export const usePageTransition = () => {
   const context = useContext(TransitionContext);
   if (!context) {
@@ -25,17 +51,19 @@ export const usePageTransition = () => {
   return context;
 };
 
-const NUM_COLUMNS = 8;
-const NUM_ROWS = 3;
-
 export const PageTransition = ({ children, variant = 'grid' }: PageTransitionProps) => {
   const pathname = usePathname();
   const [isEntering, setIsEntering] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
-  // No animation for 'none' variant
-  const animationDuration = variant === 'none' ? 0 : variant === 'logo' ? 1200 : variant === 'grid' ? 1000 : 800;
-  const exitDuration = variant === 'none' ? 0 : variant === 'logo' ? 800 : variant === 'grid' ? 700 : 600;
+  // Get durations from config
+  const getDurations = () => {
+    if (variant === 'none') return { enter: 0, exit: 0 };
+    if (variant === 'logo') return TRANSITION_CONFIG.durations.logo;
+    if (variant === 'grid') return TRANSITION_CONFIG.durations.grid;
+    return TRANSITION_CONFIG.durations.default;
+  };
+  const { enter: animationDuration, exit: exitDuration } = getDurations();
 
   // Handle page enter animation
   useEffect(() => {
@@ -59,8 +87,9 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
 
   // Grid variant: rectangles cover screen row by row on exit, uncover in reverse on enter
   const renderGridTransition = () => {
-    const totalCells = NUM_COLUMNS * NUM_ROWS;
-    const baseDelay = 0.025;
+    const { columns, rows } = TRANSITION_CONFIG.grid;
+    const { rectangleDuration, rectangleDelay } = TRANSITION_CONFIG.timing;
+    const totalCells = columns * rows;
 
     return (
       <>
@@ -69,15 +98,15 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
           {isExiting && (
             <div className="fixed inset-0 z-[9999] pointer-events-none grid"
               style={{
-                gridTemplateColumns: `repeat(${NUM_COLUMNS}, 1fr)`,
-                gridTemplateRows: `repeat(${NUM_ROWS}, 1fr)`,
+                gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                gridTemplateRows: `repeat(${rows}, 1fr)`,
               }}
             >
               {Array.from({ length: totalCells }).map((_, index) => {
-                const row = Math.floor(index / NUM_COLUMNS);
-                const col = index % NUM_COLUMNS;
+                const row = Math.floor(index / columns);
+                const col = index % columns;
                 // Left to right, row by row (top to bottom)
-                const sequentialIndex = row * NUM_COLUMNS + col;
+                const sequentialIndex = row * columns + col;
 
                 return (
                   <motion.div
@@ -87,9 +116,9 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
                     animate={{ scaleX: 1 }}
                     style={{ originX: 0 }} // Grow from left edge
                     transition={{
-                      duration: 0.35,
-                      delay: sequentialIndex * baseDelay,
-                      ease: [0.76, 0, 0.24, 1],
+                      duration: rectangleDuration,
+                      delay: sequentialIndex * rectangleDelay,
+                      ease: TRANSITION_CONFIG.easing,
                     }}
                   />
                 );
@@ -103,15 +132,15 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
           {isEntering && (
             <div className="fixed inset-0 z-[9999] pointer-events-none grid"
               style={{
-                gridTemplateColumns: `repeat(${NUM_COLUMNS}, 1fr)`,
-                gridTemplateRows: `repeat(${NUM_ROWS}, 1fr)`,
+                gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                gridTemplateRows: `repeat(${rows}, 1fr)`,
               }}
             >
               {Array.from({ length: totalCells }).map((_, index) => {
-                const row = Math.floor(index / NUM_COLUMNS);
-                const col = index % NUM_COLUMNS;
+                const row = Math.floor(index / columns);
+                const col = index % columns;
                 // Reverse order: bottom-right to top-left
-                const reverseIndex = (NUM_ROWS - 1 - row) * NUM_COLUMNS + (NUM_COLUMNS - 1 - col);
+                const reverseIndex = (rows - 1 - row) * columns + (columns - 1 - col);
 
                 return (
                   <motion.div
@@ -121,9 +150,9 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
                     animate={{ scaleX: 0 }}
                     style={{ originX: 1 }} // Shrink toward right edge
                     transition={{
-                      duration: 0.35,
-                      delay: reverseIndex * baseDelay,
-                      ease: [0.76, 0, 0.24, 1],
+                      duration: rectangleDuration,
+                      delay: reverseIndex * rectangleDelay,
+                      ease: TRANSITION_CONFIG.easing,
                     }}
                   />
                 );
@@ -136,98 +165,104 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
   };
 
   // Vertical variant: top-to-bottom exit, bottom-to-top enter
-  const renderVerticalTransition = () => (
-    <>
-      <AnimatePresence>
-        {isEntering && (
-          <div className="fixed inset-0 z-[9999] pointer-events-none flex">
-            {Array.from({ length: NUM_COLUMNS }).map((_, i) => (
-              <motion.div
-                key={`enter-${i}`}
-                className="flex-1 bg-white"
-                initial={{ scaleY: 1 }}
-                animate={{ scaleY: 0 }}
-                style={{ originY: 0 }}
-                transition={{
-                  duration: 0.5,
-                  delay: i * 0.08,
-                  ease: [0.76, 0, 0.24, 1],
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
+  const renderVerticalTransition = () => {
+    const cols = TRANSITION_CONFIG.grid.columns;
+    return (
+      <>
+        <AnimatePresence>
+          {isEntering && (
+            <div className="fixed inset-0 z-[9999] pointer-events-none flex">
+              {Array.from({ length: cols }).map((_, i) => (
+                <motion.div
+                  key={`enter-${i}`}
+                  className="flex-1 bg-white"
+                  initial={{ scaleY: 1 }}
+                  animate={{ scaleY: 0 }}
+                  style={{ originY: 0 }}
+                  transition={{
+                    duration: TRANSITION_CONFIG.timing.rectangleDuration,
+                    delay: i * TRANSITION_CONFIG.timing.rectangleDelay,
+                    ease: TRANSITION_CONFIG.easing,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
 
-      <AnimatePresence>
-        {isExiting && (
-          <div className="fixed inset-0 z-[9999] pointer-events-none flex">
-            {Array.from({ length: NUM_COLUMNS }).map((_, i) => (
-              <motion.div
-                key={`exit-${i}`}
-                className="flex-1 bg-white"
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
-                style={{ originY: 1 }}
-                transition={{
-                  duration: 0.5,
-                  delay: i * 0.08,
-                  ease: [0.76, 0, 0.24, 1],
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
-    </>
-  );
+        <AnimatePresence>
+          {isExiting && (
+            <div className="fixed inset-0 z-[9999] pointer-events-none flex">
+              {Array.from({ length: cols }).map((_, i) => (
+                <motion.div
+                  key={`exit-${i}`}
+                  className="flex-1 bg-white"
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  style={{ originY: 1 }}
+                  transition={{
+                    duration: TRANSITION_CONFIG.timing.rectangleDuration,
+                    delay: i * TRANSITION_CONFIG.timing.rectangleDelay,
+                    ease: TRANSITION_CONFIG.easing,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  };
 
   // Horizontal variant: left-to-right exit, right-to-left enter
-  const renderHorizontalTransition = () => (
-    <>
-      <AnimatePresence>
-        {isEntering && (
-          <div className="fixed inset-0 z-[9999] pointer-events-none flex">
-            {Array.from({ length: NUM_COLUMNS }).map((_, i) => (
-              <motion.div
-                key={`enter-${i}`}
-                className="flex-1 bg-white"
-                initial={{ scaleX: 1 }}
-                animate={{ scaleX: 0 }}
-                style={{ originX: 1 }}
-                transition={{
-                  duration: 0.5,
-                  delay: (NUM_COLUMNS - 1 - i) * 0.08,
-                  ease: [0.76, 0, 0.24, 1],
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
+  const renderHorizontalTransition = () => {
+    const cols = TRANSITION_CONFIG.grid.columns;
+    return (
+      <>
+        <AnimatePresence>
+          {isEntering && (
+            <div className="fixed inset-0 z-[9999] pointer-events-none flex">
+              {Array.from({ length: cols }).map((_, i) => (
+                <motion.div
+                  key={`enter-${i}`}
+                  className="flex-1 bg-white"
+                  initial={{ scaleX: 1 }}
+                  animate={{ scaleX: 0 }}
+                  style={{ originX: 1 }}
+                  transition={{
+                    duration: TRANSITION_CONFIG.timing.rectangleDuration,
+                    delay: (cols - 1 - i) * TRANSITION_CONFIG.timing.rectangleDelay,
+                    ease: TRANSITION_CONFIG.easing,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
 
-      <AnimatePresence>
-        {isExiting && (
-          <div className="fixed inset-0 z-[9999] pointer-events-none flex">
-            {Array.from({ length: NUM_COLUMNS }).map((_, i) => (
-              <motion.div
-                key={`exit-${i}`}
-                className="flex-1 bg-white"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                style={{ originX: 0 }}
-                transition={{
-                  duration: 0.5,
-                  delay: i * 0.08,
-                  ease: [0.76, 0, 0.24, 1],
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </AnimatePresence>
-    </>
-  );
+        <AnimatePresence>
+          {isExiting && (
+            <div className="fixed inset-0 z-[9999] pointer-events-none flex">
+              {Array.from({ length: cols }).map((_, i) => (
+                <motion.div
+                  key={`exit-${i}`}
+                  className="flex-1 bg-white"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  style={{ originX: 0 }}
+                  transition={{
+                    duration: TRANSITION_CONFIG.timing.rectangleDuration,
+                    delay: i * TRANSITION_CONFIG.timing.rectangleDelay,
+                    ease: TRANSITION_CONFIG.easing,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  };
 
   // Logo variant: black background with RTT logo (for hero page)
   const renderLogoTransition = () => (
@@ -317,7 +352,7 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
     }
   };
 
-  const contentDelay = variant === 'none' ? 0 : variant === 'logo' ? 0.6 : variant === 'grid' ? 0.5 : 0.4;
+  const contentDelay = variant === 'none' ? 0 : TRANSITION_CONFIG.timing.contentFadeDelay;
 
   return (
     <TransitionContext.Provider value={{ isExiting, startExitTransition }}>

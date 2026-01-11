@@ -117,16 +117,16 @@ export const Header: React.FC = () => {
   return (
     <header
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out ${
         isAuthPage
-          ? 'bg-black shadow-lg border-b border-white/10'
+          ? 'bg-black/95 backdrop-blur-md shadow-lg border-b border-white/10'
           : scrolled
-          ? 'bg-white shadow-lg border-b border-black/10'
-          : 'bg-transparent'
+          ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-black/5'
+          : 'bg-gradient-to-b from-black/40 to-transparent'
       }`}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14 sm:h-16">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
           <Link
             href="/"
@@ -234,7 +234,7 @@ export const Header: React.FC = () => {
         {mobileMenuOpen && (
           <div
             ref={menuRef}
-            className="md:hidden fixed inset-0 top-14 sm:top-16 bg-white z-50 overflow-y-auto"
+            className="md:hidden fixed inset-0 top-16 sm:top-20 bg-white/98 backdrop-blur-lg z-50 overflow-y-auto"
           >
             <div className="py-6 px-4 sm:px-6 space-y-1">
               {navLinks.map((link) => (

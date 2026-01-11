@@ -1,9 +1,17 @@
 import type { Metadata } from 'next';
+import { Rubik } from 'next/font/google';
 import './globals.css';
 import { CartProvider } from '@/components/providers/CartProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+
+const rubik = Rubik({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-rubik',
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+});
 
 export const metadata: Metadata = {
   title: 'Respect the Technique',
@@ -26,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased flex flex-col min-h-screen">
+    <html lang="en" className={rubik.variable}>
+      <body className={`${rubik.className} antialiased flex flex-col min-h-screen`}>
         <CartProvider>
           <Header />
           <main className="flex-1">{children}</main>

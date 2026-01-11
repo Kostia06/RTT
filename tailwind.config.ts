@@ -11,6 +11,11 @@ const config: Config = {
       colors: {
         primary: '#000000',
         secondary: '#FFFFFF',
+        accent: {
+          DEFAULT: '#1673a5',
+          light: '#1d8cc7',
+          dark: '#125e87',
+        },
         gray: {
           50: '#FAFAFA',
           100: '#F5F5F5',
@@ -26,7 +31,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-rubik)', 'system-ui', 'sans-serif'],
       },
       animation: {
         'noodle-wiggle': 'wiggle 2s ease-in-out infinite',

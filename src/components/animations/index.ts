@@ -5,6 +5,7 @@
 
 // Hero & visual effects
 export { NoodleHero } from './NoodleHero';
+export { NoodleHeroSimple } from './NoodleHeroSimple';
 export { default as NoodleStrands } from './NoodleStrands';
 
 // Scroll animations

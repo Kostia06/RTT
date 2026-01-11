@@ -57,14 +57,48 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
     await new Promise((resolve) => setTimeout(resolve, exitDuration));
   };
 
-  // Grid variant: vertical rectangles filling left to right, row by row
+  // Grid variant: rectangles cover screen row by row on exit, uncover in reverse on enter
   const renderGridTransition = () => {
     const totalCells = NUM_COLUMNS * NUM_ROWS;
-    const baseDelay = 0.03;
+    const baseDelay = 0.025;
 
     return (
       <>
-        {/* Enter transition - rectangles shrink in reverse order (bottom-right to top-left) */}
+        {/* Exit transition - rectangles COVER screen left to right, row by row (top to bottom) */}
+        <AnimatePresence>
+          {isExiting && (
+            <div className="fixed inset-0 z-[9999] pointer-events-none grid"
+              style={{
+                gridTemplateColumns: `repeat(${NUM_COLUMNS}, 1fr)`,
+                gridTemplateRows: `repeat(${NUM_ROWS}, 1fr)`,
+              }}
+            >
+              {Array.from({ length: totalCells }).map((_, index) => {
+                const row = Math.floor(index / NUM_COLUMNS);
+                const col = index % NUM_COLUMNS;
+                // Left to right, row by row (top to bottom)
+                const sequentialIndex = row * NUM_COLUMNS + col;
+
+                return (
+                  <motion.div
+                    key={`exit-${index}`}
+                    className="bg-white"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    style={{ originX: 0 }} // Grow from left edge
+                    transition={{
+                      duration: 0.35,
+                      delay: sequentialIndex * baseDelay,
+                      ease: [0.76, 0, 0.24, 1],
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Enter transition - rectangles UNCOVER screen in reverse (bottom-right to top-left) */}
         <AnimatePresence>
           {isEntering && (
             <div className="fixed inset-0 z-[9999] pointer-events-none grid"
@@ -83,46 +117,12 @@ export const PageTransition = ({ children, variant = 'grid' }: PageTransitionPro
                   <motion.div
                     key={`enter-${index}`}
                     className="bg-white"
-                    initial={{ scaleY: 1 }}
-                    animate={{ scaleY: 0 }}
-                    style={{ originY: 0 }}
+                    initial={{ scaleX: 1 }}
+                    animate={{ scaleX: 0 }}
+                    style={{ originX: 1 }} // Shrink toward right edge
                     transition={{
-                      duration: 0.4,
+                      duration: 0.35,
                       delay: reverseIndex * baseDelay,
-                      ease: [0.76, 0, 0.24, 1],
-                    }}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* Exit transition - rectangles grow left to right, row by row */}
-        <AnimatePresence>
-          {isExiting && (
-            <div className="fixed inset-0 z-[9999] pointer-events-none grid"
-              style={{
-                gridTemplateColumns: `repeat(${NUM_COLUMNS}, 1fr)`,
-                gridTemplateRows: `repeat(${NUM_ROWS}, 1fr)`,
-              }}
-            >
-              {Array.from({ length: totalCells }).map((_, index) => {
-                const row = Math.floor(index / NUM_COLUMNS);
-                const col = index % NUM_COLUMNS;
-                // Left to right, row by row
-                const sequentialIndex = row * NUM_COLUMNS + col;
-
-                return (
-                  <motion.div
-                    key={`exit-${index}`}
-                    className="bg-white"
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    style={{ originY: 1 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: sequentialIndex * baseDelay,
                       ease: [0.76, 0, 0.24, 1],
                     }}
                   />

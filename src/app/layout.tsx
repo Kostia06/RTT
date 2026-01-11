@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { Rubik } from 'next/font/google';
+import { Suspense } from 'react';
 import './globals.css';
 import { CartProvider } from '@/components/providers/CartProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+import { NavigationProgress } from '@/components/transitions/NavigationProgress';
 
 const rubik = Rubik({
   subsets: ['latin'],
@@ -37,6 +39,9 @@ export default function RootLayout({
     <html lang="en" className={rubik.variable}>
       <body className={`${rubik.className} antialiased flex flex-col min-h-screen`}>
         <CartProvider>
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

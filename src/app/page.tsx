@@ -7,6 +7,7 @@ import { WorkshopsTeaser } from '@/components/home/WorkshopsTeaser';
 import { Philosophy } from '@/components/home/Philosophy';
 import { WorkshopGallery } from '@/components/home/WorkshopGallery';
 import { Newsletter } from '@/components/home/Newsletter';
+import { SectionDivider } from '@/components/home/SectionDivider';
 
 export default function Home() {
   return (
@@ -15,8 +16,11 @@ export default function Home() {
       <NoodleHero />
       <Marquee />
       <FeaturedProducts />
+      <SectionDivider variant="light" pattern="dots" />
       <RecipesShowcase />
+      <SectionDivider variant="dark" pattern="lines" />
       <WorkshopsTeaser />
+      <SectionDivider variant="light" pattern="wave" />
       <Philosophy />
       <WorkshopGallery />
       <Marquee />

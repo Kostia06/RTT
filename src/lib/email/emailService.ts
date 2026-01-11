@@ -1,36 +1,11 @@
-import nodemailer, { Transporter } from 'nodemailer';
 import { OrderConfirmationEmail } from './templates/OrderConfirmationEmail';
 import { render } from '@react-email/components';
 
 // Email service configuration
 const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'console';
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587', 10);
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@respectthetechnique.com';
 const FROM_NAME = process.env.FROM_NAME || 'Respect The Technique';
-
-// Create transporter based on environment
-function createTransporter(): Transporter | null {
-  if (EMAIL_PROVIDER === 'console') {
-    return null;
-  }
-
-  if (EMAIL_PROVIDER === 'smtp') {
-    return nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_PORT === 465,
-      auth: {
-        user: SMTP_USER,
-        pass: SMTP_PASSWORD,
-      },
-    });
-  }
-
-  throw new Error(`Unsupported email provider: ${EMAIL_PROVIDER}`);
-}
 
 interface SendEmailOptions {
   to: string;
@@ -39,10 +14,39 @@ interface SendEmailOptions {
   text?: string;
 }
 
-export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
-  const transporter = createTransporter();
+// Send email using Resend API (Cloudflare Workers compatible)
+async function sendWithResend(options: SendEmailOptions) {
+  if (!RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
 
-  if (!transporter) {
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Failed to send email: ${JSON.stringify(error)}`);
+  }
+
+  const result = await response.json();
+  return { success: true, messageId: result.id };
+}
+
+export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
+  // Console mode for development
+  if (EMAIL_PROVIDER === 'console') {
     console.log('\n=== EMAIL NOTIFICATION ===');
     console.log('To:', to);
     console.log('From:', `${FROM_NAME} <${FROM_EMAIL}>`);
@@ -57,15 +61,12 @@ export async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
     return { success: true, mode: 'console' };
   }
 
-  const info = await transporter.sendMail({
-    from: `${FROM_NAME} <${FROM_EMAIL}>`,
-    to,
-    subject,
-    html,
-    text,
-  });
+  // Resend for production (Cloudflare compatible)
+  if (EMAIL_PROVIDER === 'resend') {
+    return sendWithResend({ to, subject, html, text });
+  }
 
-  return { success: true, messageId: info.messageId };
+  throw new Error(`Unsupported email provider: ${EMAIL_PROVIDER}`);
 }
 
 // Order confirmation email

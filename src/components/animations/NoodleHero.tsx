@@ -28,12 +28,6 @@ export const NoodleHero: React.FC = () => {
         '-=1'
       )
       .fromTo(
-        '.hero-logo-small',
-        { scale: 0, opacity: 0 },
-        { scale: 1, opacity: 0.8, duration: 0.8, ease: 'back.out(1.5)' },
-        '-=0.8'
-      )
-      .fromTo(
         '.hero-line',
         { scaleX: 0 },
         { scaleX: 1, duration: 1, stagger: 0.1 },
@@ -53,8 +47,8 @@ export const NoodleHero: React.FC = () => {
       )
       .fromTo(
         '.hero-cta',
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6, stagger: 0.1 },
+        { y: 30, opacity: 0, scale: 0.9 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.6, stagger: 0.15 },
         '-=0.3'
       )
       .fromTo(
@@ -65,8 +59,20 @@ export const NoodleHero: React.FC = () => {
       )
       .fromTo(
         '.floating-kanji',
-        { opacity: 0, scale: 0.8 },
-        { opacity: 0.03, scale: 1, duration: 1.5, stagger: 0.2 },
+        { opacity: 0, scale: 0.8, y: 50 },
+        { opacity: 0.03, scale: 1, y: 0, duration: 1.5, stagger: 0.2 },
+        '-=1'
+      )
+      .fromTo(
+        '.corner-accent',
+        { scale: 0, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.5, stagger: 0.1 },
+        '-=1'
+      )
+      .fromTo(
+        '.steam-line',
+        { scaleY: 0, opacity: 0 },
+        { scaleY: 1, opacity: 0.3, duration: 1.5, stagger: 0.2 },
         '-=1'
       );
 
@@ -87,6 +93,25 @@ export const NoodleHero: React.FC = () => {
         yoyo: true,
         ease: 'sine.inOut',
         stagger: { each: 0.5, from: 'random' }
+      });
+
+      // Steam rising effect
+      gsap.to('.steam-line', {
+        y: -30,
+        opacity: 0,
+        duration: 2,
+        stagger: 0.3,
+        repeat: -1,
+        ease: 'power1.out'
+      });
+
+      // Subtle pulse on CTA buttons
+      gsap.to('.hero-cta-pulse', {
+        scale: 1.02,
+        duration: 2,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut'
       });
 
       // Parallax on scroll
@@ -110,6 +135,12 @@ export const NoodleHero: React.FC = () => {
           });
           gsap.to('.floating-kanji', {
             y: self.progress * -50,
+            ease: 'none',
+            overwrite: 'auto'
+          });
+          gsap.to('.corner-accent', {
+            scale: 1 - self.progress * 0.5,
+            opacity: 1 - self.progress,
             ease: 'none',
             overwrite: 'auto'
           });
@@ -138,9 +169,20 @@ export const NoodleHero: React.FC = () => {
         }}
       />
 
+      {/* Steam effect lines */}
+      <div className="absolute bottom-1/4 left-1/4 flex gap-2 pointer-events-none">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="steam-line w-px h-8 bg-gradient-to-t from-white/30 to-transparent origin-bottom"
+            style={{ animationDelay: `${i * 0.3}s` }}
+          />
+        ))}
+      </div>
+
       {/* Large animated logo in background */}
       <div className="hero-logo-bg absolute inset-0 flex items-center justify-center">
-        <div className="relative w-[80vw] h-[80vw] sm:w-[70vw] sm:h-[70vw] md:w-[60vw] md:h-[60vw] max-w-[700px] max-h-[700px]">
+        <div className="relative w-[70vw] h-[70vw] max-w-[500px] max-h-[500px]">
           <Image
             src="/images/logo.png"
             alt=""
@@ -153,13 +195,13 @@ export const NoodleHero: React.FC = () => {
       </div>
 
       {/* Floating Kanji characters - hidden on small mobile */}
-      <div className="floating-kanji hidden sm:block absolute top-[10%] left-[5%] text-white text-[15vw] md:text-[12vw] lg:text-[10vw] font-bold select-none pointer-events-none">
+      <div className="floating-kanji hidden sm:block absolute top-[10%] left-[5%] text-[12vw] md:text-[10vw] font-bold select-none pointer-events-none text-white">
         麺
       </div>
-      <div className="floating-kanji hidden sm:block absolute top-[30%] right-[8%] text-white text-[12vw] md:text-[10vw] lg:text-[8vw] font-bold select-none pointer-events-none">
+      <div className="floating-kanji hidden sm:block absolute top-[30%] right-[8%] text-[10vw] md:text-[8vw] font-bold select-none pointer-events-none text-white">
         豚
       </div>
-      <div className="floating-kanji hidden sm:block absolute bottom-[20%] left-[15%] text-white text-[14vw] md:text-[11vw] lg:text-[9vw] font-bold select-none pointer-events-none">
+      <div className="floating-kanji hidden sm:block absolute bottom-[20%] left-[15%] text-[11vw] md:text-[9vw] font-bold select-none pointer-events-none text-white">
         骨
       </div>
 
@@ -172,27 +214,27 @@ export const NoodleHero: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div className="hero-content relative z-10 text-center px-4 sm:px-6 max-w-6xl mx-auto">
+      <div className="hero-content relative z-10 text-center px-3 sm:px-6 max-w-6xl mx-auto w-full">
 
         {/* Main title with character animation */}
-        <h1 className="text-[13vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-black leading-[0.9] sm:leading-[0.85] tracking-[-0.04em] text-white mb-6 sm:mb-8 break-words"
+        <h1 className="text-[11vw] sm:text-[9vw] md:text-[7vw] lg:text-[6vw] font-black leading-[0.95] tracking-[-0.03em] text-white mb-4 sm:mb-8"
           style={{ perspective: '1000px' }}
         >
-          <span className="block overflow-visible py-2">
+          <span className="block overflow-visible py-1">
             {titleChars.slice(0, 7).map((char, i) => (
               <span key={i} className="hero-char inline-block will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
                 {char === ' ' ? '\u00A0' : char}
               </span>
             ))}
           </span>
-          <span className="block overflow-visible py-2">
+          <span className="block overflow-visible py-1">
             {titleChars.slice(8, 11).map((char, i) => (
               <span key={i} className="hero-char inline-block text-outline will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
                 {char === ' ' ? '\u00A0' : char}
               </span>
             ))}
           </span>
-          <span className="block overflow-visible py-2">
+          <span className="block overflow-visible py-1">
             {titleChars.slice(12).map((char, i) => (
               <span key={i} className="hero-char inline-block will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
                 {char === ' ' ? '\u00A0' : char}
@@ -202,48 +244,69 @@ export const NoodleHero: React.FC = () => {
         </h1>
 
         {/* Subtitle */}
-        <p className="hero-subtitle text-base sm:text-lg md:text-xl lg:text-2xl text-white/60 max-w-xl mx-auto mb-8 sm:mb-10 md:mb-12 font-light tracking-wide px-4">
+        <p className="hero-subtitle text-sm sm:text-base md:text-lg lg:text-xl text-white/60 max-w-md mx-auto mb-6 sm:mb-10 font-light tracking-wide px-2">
           18 hours of patience in every bowl.
-          <br className="hidden sm:block" />
-          <span className="sm:block text-white/40"> Hakata tradition, Calgary crafted.</span>
+          <span className="block text-white/40 mt-1">Hakata tradition, Calgary crafted.</span>
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-2">
           <Link
             href="/shop"
-            className="hero-cta group relative px-8 sm:px-12 py-4 sm:py-5 bg-white text-black font-bold text-sm tracking-[0.2em] uppercase overflow-hidden touch-manipulation active:bg-gray-100"
+            className="hero-cta hero-cta-pulse group relative px-6 sm:px-10 py-3.5 sm:py-4 bg-white text-black font-bold text-xs sm:text-sm tracking-[0.15em] uppercase overflow-hidden touch-manipulation active:scale-95 transition-transform"
           >
             <span className="relative z-10">Shop Now</span>
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
           </Link>
           <Link
             href="/recipes"
-            className="hero-cta group relative px-8 sm:px-12 py-4 sm:py-5 border-2 sm:border border-white/30 text-white font-bold text-sm tracking-[0.2em] uppercase overflow-hidden hover:border-white active:bg-white/10 transition-colors duration-300 touch-manipulation"
+            className="hero-cta group relative px-6 sm:px-10 py-3.5 sm:py-4 border border-white/40 text-white font-bold text-xs sm:text-sm tracking-[0.15em] uppercase overflow-hidden hover:border-white active:bg-white/10 transition-all duration-300 touch-manipulation"
           >
             <span className="relative z-10">Browse Recipes</span>
+            <div className="absolute inset-0 bg-white/5 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
           </Link>
         </div>
       </div>
 
       {/* Scroll indicator */}
-      <div className="hero-scroll absolute bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 sm:gap-4">
-        <span className="text-white/40 text-[10px] sm:text-xs tracking-[0.3em] uppercase">Scroll</span>
-        <div className="w-px h-12 sm:h-16 bg-gradient-to-b from-white/40 to-transparent relative overflow-hidden">
+      <div className="hero-scroll absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 sm:gap-3">
+        <span className="text-white/40 text-[9px] sm:text-xs tracking-[0.3em] uppercase">Scroll</span>
+        <div className="w-px h-10 sm:h-14 bg-gradient-to-b from-white/40 to-transparent relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1/2 bg-white animate-scroll-line" />
         </div>
       </div>
 
       {/* Corner accents */}
-      <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-8 h-8 sm:w-12 sm:h-12 border-l border-t border-white/20" />
-      <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-8 h-8 sm:w-12 sm:h-12 border-r border-t border-white/20" />
-      <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-8 h-8 sm:w-12 sm:h-12 border-l border-b border-white/20" />
-      <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-8 h-8 sm:w-12 sm:h-12 border-r border-b border-white/20" />
+      <div className="corner-accent absolute top-3 left-3 sm:top-6 sm:left-6 w-6 h-6 sm:w-10 sm:h-10 border-l border-t border-white/20" />
+      <div className="corner-accent absolute top-3 right-3 sm:top-6 sm:right-6 w-6 h-6 sm:w-10 sm:h-10 border-r border-t border-white/20" />
+      <div className="corner-accent absolute bottom-3 left-3 sm:bottom-6 sm:left-6 w-6 h-6 sm:w-10 sm:h-10 border-l border-b border-white/20" />
+      <div className="corner-accent absolute bottom-3 right-3 sm:bottom-6 sm:right-6 w-6 h-6 sm:w-10 sm:h-10 border-r border-b border-white/20" />
+
+      {/* Animated dots pattern - subtle decoration */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full animate-float-dots"
+            style={{
+              left: `${20 + i * 15}%`,
+              top: `${30 + (i % 3) * 20}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${3 + i * 0.5}s`
+            }}
+          />
+        ))}
+      </div>
 
       <style jsx>{`
         .text-outline {
-          -webkit-text-stroke: 1.5px white;
+          -webkit-text-stroke: 1px white;
           color: transparent;
+        }
+        @media (min-width: 640px) {
+          .text-outline {
+            -webkit-text-stroke: 1.5px white;
+          }
         }
         @keyframes scroll-line {
           0% { transform: translateY(-100%); }
@@ -251,6 +314,13 @@ export const NoodleHero: React.FC = () => {
         }
         .animate-scroll-line {
           animation: scroll-line 1.5s ease-in-out infinite;
+        }
+        @keyframes float-dots {
+          0%, 100% { transform: translateY(0) scale(1); opacity: 0.2; }
+          50% { transform: translateY(-20px) scale(1.5); opacity: 0.5; }
+        }
+        .animate-float-dots {
+          animation: float-dots 3s ease-in-out infinite;
         }
       `}</style>
     </div>

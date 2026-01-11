@@ -1,3 +1,8 @@
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+
+// Initialize OpenNext for development
+initOpenNextCloudflareForDev();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {

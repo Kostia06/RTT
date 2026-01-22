@@ -84,15 +84,42 @@ export default function EmployeeDashboard() {
     return () => ctx.revert();
   }, []);
 
-  // Fetch employee stats (mock data for now)
+  // Fetch employee stats
   useEffect(() => {
-    if (isAuthenticated && isEmployee) {
-      // TODO: Fetch real data from Supabase
-      setStats({
-        ordersToday: 12,
-        ordersThisWeek: 47,
-      });
-    }
+    const fetchStats = async () => {
+      if (isAuthenticated && isEmployee) {
+        try {
+          // Fetch today's orders count
+          const todayResponse = await fetch('/api/orders/today');
+          if (todayResponse.ok) {
+            const todayData = await todayResponse.json();
+            const ordersToday = todayData.orders?.length || 0;
+
+            // Fetch all orders for this week count
+            const allOrdersResponse = await fetch('/api/orders');
+            let ordersThisWeek = 0;
+            if (allOrdersResponse.ok) {
+              const allData = await allOrdersResponse.json();
+              const orders = allData.orders || [];
+              // Count orders from the last 7 days
+              const weekAgo = new Date();
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              ordersThisWeek = orders.filter((o: any) => new Date(o.createdAt) >= weekAgo).length;
+            }
+
+            setStats({
+              ordersToday,
+              ordersThisWeek,
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching stats:', error);
+          // Keep default values on error
+        }
+      }
+    };
+
+    fetchStats();
   }, [isAuthenticated, isEmployee]);
 
   // Fetch new messages count

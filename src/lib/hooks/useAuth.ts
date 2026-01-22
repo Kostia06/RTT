@@ -29,11 +29,18 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const role = user?.user_metadata?.role;
+
   return {
     user,
+    role,
     isAuthenticated: !!user,
     isLoading,
-    isEmployee: user?.user_metadata?.role === 'employee' || user?.user_metadata?.role === 'admin',
-    isAdmin: user?.user_metadata?.role === 'admin',
+    // isEmployee includes all staff roles (employee, manager, admin)
+    isEmployee: role === 'employee' || role === 'manager' || role === 'admin',
+    // isManager includes managers and admins
+    isManager: role === 'manager' || role === 'admin',
+    // isAdmin is admin only
+    isAdmin: role === 'admin',
   };
 };

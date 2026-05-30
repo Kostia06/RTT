@@ -1,8 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+let ai: GoogleGenAI | null = null;
+
+// Lazily construct the client so `next build` can import this module
+// (e.g. for the AI route) without GEMINI_API_KEY present.
+function getAi(): GoogleGenAI {
+  if (!ai) {
+    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return ai;
+}
 
 export interface FileData {
   mimeType: string;
@@ -24,7 +31,7 @@ export async function generateContent(prompt: string, images?: FileData[]) {
       });
     }
 
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: parts,
     });
@@ -55,7 +62,7 @@ export async function generateContentWithFunctions(
       });
     }
 
-    const response = await ai.models.generateContent({
+    const response = await getAi().models.generateContent({
       model: 'gemini-2.5-flash',
       contents: parts,
       config: {

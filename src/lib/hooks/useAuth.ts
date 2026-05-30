@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/supabase/config';
 import type { User } from '@supabase/supabase-js';
 
 export const useAuth = () => {
@@ -9,6 +10,12 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Supabase deactivated: treat everyone as logged-out, skip network calls.
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
     const supabase = createClient();
 
     // Get initial session

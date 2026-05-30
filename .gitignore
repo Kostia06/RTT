@@ -48,3 +48,7 @@ next-env.d.ts
 # IDE
 .vscode
 .idea
+
+# stray caches
+node-compile-cache/
+pnpm-lock.yaml

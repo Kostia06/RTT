@@ -98,11 +98,6 @@ export default function RecipesPage() {
           }}
         />
 
-        {/* Floating Kanji with Parallax */}
-        <div className="hero-kanji absolute top-10 right-[5%] text-[35vw] font-black text-white/[0.02] pointer-events-none select-none">
-          麺
-        </div>
-
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pt-20 sm:py-20 sm:pt-24">
           {/* Breadcrumb */}
           <div className="flex items-center gap-3 mb-6 text-sm text-white/60">
@@ -209,9 +204,7 @@ export default function RecipesPage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                      <span className="text-6xl">麺</span>
-                    </div>
+                    <div className="w-full h-full bg-gray-800" />
                   )}
 
                   {/* Gradient overlay */}

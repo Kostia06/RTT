@@ -220,10 +220,10 @@ export const FeaturedProducts: React.FC = () => {
 
   if (loading) {
     return (
-      <section className="py-32 bg-white">
+      <section className="py-32 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center">
-            <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
           </div>
         </div>
       </section>
@@ -233,19 +233,19 @@ export const FeaturedProducts: React.FC = () => {
   const title = 'FEATURED';
 
   return (
-    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white relative overflow-hidden">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
       {/* Background accent */}
-      <div className="absolute top-0 right-0 w-1/3 h-full bg-gray-50 -skew-x-12 origin-top-right" />
+      <div className="absolute top-0 right-0 w-1/3 h-full bg-white/[0.03] -skew-x-12 origin-top-right" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full py-12 sm:py-16 md:py-20 lg:py-24">
         {/* Section header */}
         <div className="mb-20">
           <div className="flex items-center gap-8 mb-6">
-            <div className="section-heading-line h-px bg-black flex-1 max-w-[100px] origin-left" />
-            <span className="text-sm tracking-[0.3em] text-gray-500 uppercase">Selection</span>
+            <div className="section-heading-line h-px bg-white flex-1 max-w-[100px] origin-left" />
+            <span className="text-sm tracking-[0.3em] text-gray-400 uppercase">Selection</span>
           </div>
 
-          <h2 className="section-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.04em] text-black overflow-visible py-4 break-words">
+          <h2 className="section-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[-0.04em] text-white overflow-visible py-4 break-words">
             {title.split('').map((char, i) => (
               <span key={i} className="section-title-char inline-block will-change-transform">
                 {char}
@@ -253,7 +253,7 @@ export const FeaturedProducts: React.FC = () => {
             ))}
           </h2>
 
-          <p className="mt-6 text-xl text-gray-500 max-w-xl">
+          <p className="mt-6 text-xl text-gray-400 max-w-xl">
             Each bowl represents years of refinement. Slow-simmered broths,
             hand-pulled noodles, carefully sourced toppings.
           </p>
@@ -272,7 +272,7 @@ export const FeaturedProducts: React.FC = () => {
                   href={`/shop/${product.slug}`}
                   className="product-card group block w-[85vw] sm:w-[70vw] snap-center flex-shrink-0"
                 >
-                <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-6">
+                <div className="relative aspect-[3/4] bg-gray-900 overflow-hidden mb-6">
                   {product.images?.[0] && (
                     <Image
                       src={product.images[0].url}
@@ -304,10 +304,10 @@ export const FeaturedProducts: React.FC = () => {
                   <span className="text-xs tracking-[0.2em] text-gray-400 uppercase">
                     {product.category.replace('-', ' ')}
                   </span>
-                  <h3 className="text-lg font-bold text-black group-hover:underline underline-offset-4">
+                  <h3 className="text-lg font-bold text-white group-hover:underline underline-offset-4">
                     {product.name}
                   </h3>
-                  <p className="text-2xl font-black text-black">
+                  <p className="text-2xl font-black text-white">
                     ${product.price_regular.toFixed(2)}
                   </p>
                 </div>
@@ -321,7 +321,7 @@ export const FeaturedProducts: React.FC = () => {
             <>
               <button
                 onClick={prevSlide}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/80 text-black flex items-center justify-center hover:bg-white transition-colors z-10"
                 aria-label="Previous slide"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -330,7 +330,7 @@ export const FeaturedProducts: React.FC = () => {
               </button>
               <button
                 onClick={nextSlide}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/80 text-black flex items-center justify-center hover:bg-white transition-colors z-10"
                 aria-label="Next slide"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,7 +348,7 @@ export const FeaturedProducts: React.FC = () => {
                     aria-label={`Go to slide ${index + 1}`}
                   >
                     <span className={`block rounded-full transition-all ${
-                      index === currentSlide ? 'bg-black w-8 h-2' : 'bg-black/40 w-2 h-2'
+                      index === currentSlide ? 'bg-white w-8 h-2' : 'bg-white/40 w-2 h-2'
                     }`} />
                   </button>
                 ))}
@@ -365,7 +365,7 @@ export const FeaturedProducts: React.FC = () => {
               href={`/shop/${product.slug}`}
               className="product-card group block"
             >
-              <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden mb-6">
+              <div className="relative aspect-[3/4] bg-gray-900 overflow-hidden mb-6">
                 {product.images?.[0] && (
                   <Image
                     src={product.images[0].url}
@@ -400,10 +400,10 @@ export const FeaturedProducts: React.FC = () => {
                 <span className="text-xs tracking-[0.2em] text-gray-400 uppercase">
                   {product.category.replace('-', ' ')}
                 </span>
-                <h3 className="text-lg font-bold text-black group-hover:underline underline-offset-4">
+                <h3 className="text-lg font-bold text-white group-hover:underline underline-offset-4">
                   {product.name}
                 </h3>
-                <p className="text-2xl font-black text-black">
+                <p className="text-2xl font-black text-white">
                   ${product.price_regular.toFixed(2)}
                 </p>
               </div>
@@ -419,7 +419,7 @@ export const FeaturedProducts: React.FC = () => {
           >
             <span className="relative">
               View All Products
-              <span className="absolute bottom-0 left-0 w-0 h-px bg-black group-hover:w-full transition-all duration-300" />
+              <span className="absolute bottom-0 left-0 w-0 h-px bg-white group-hover:w-full transition-all duration-300" />
             </span>
             <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />

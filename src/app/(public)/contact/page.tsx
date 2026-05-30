@@ -177,11 +177,6 @@ export default function ContactPage() {
           }}
         />
 
-        {/* Floating Kanji */}
-        <div className="hero-kanji absolute top-10 right-[5%] text-[30vw] sm:text-[25vw] font-black text-white/[0.02] leading-none pointer-events-none select-none">
-          連絡
-        </div>
-
         {/* Floating decorative elements */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="float-element absolute top-[20%] left-[10%] w-12 h-12 sm:w-16 sm:h-16 border border-white/10 rounded-full" />

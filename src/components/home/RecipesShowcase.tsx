@@ -163,12 +163,12 @@ export const RecipesShowcase: React.FC = () => {
   const [mainRecipe, ...otherRecipes] = recipes;
 
   return (
-    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
       {/* Background pattern */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FFFFFF' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}
       />
 
@@ -176,15 +176,15 @@ export const RecipesShowcase: React.FC = () => {
         {/* Header */}
         <div className="showcase-title mb-16 text-center">
           <div className="flex items-center justify-center gap-6 mb-8">
-            <div className="h-px bg-white/30 w-20" />
-            <span className="text-sm tracking-[0.3em] text-white/60 uppercase">From Our Kitchen</span>
-            <div className="h-px bg-white/30 w-20" />
+            <div className="h-px bg-black/30 w-20" />
+            <span className="text-sm tracking-[0.3em] text-black/70 uppercase">From Our Kitchen</span>
+            <div className="h-px bg-black/30 w-20" />
           </div>
 
-          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-[-0.04em] text-white mb-4 break-words">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-[-0.04em] text-black mb-4 break-words">
             SIGNATURE RECIPES
           </h2>
-          <p className="text-xl text-white/70 max-w-2xl mx-auto">
+          <p className="text-xl text-black/70 max-w-2xl mx-auto">
             Time-tested techniques. Authentic flavors. Learn to create ramen magic at home.
           </p>
         </div>
@@ -272,7 +272,7 @@ export const RecipesShowcase: React.FC = () => {
                     href={`/recipes/${recipe.slug}`}
                     className="showcase-small-card group block w-[85vw] sm:w-[70vw] snap-center flex-shrink-0"
                   >
-                    <div className="grid grid-cols-5 gap-6 bg-white/5 hover:bg-white/10 transition-colors overflow-hidden h-full">
+                    <div className="grid grid-cols-5 gap-6 bg-black/5 hover:bg-black/10 transition-colors overflow-hidden h-full">
                       {/* Image */}
                       <div className="col-span-2 relative aspect-square bg-gray-900">
                         {recipe.images?.[0]?.url && (
@@ -297,11 +297,11 @@ export const RecipesShowcase: React.FC = () => {
 
                       {/* Content */}
                       <div className="col-span-3 py-4 pr-4 flex flex-col justify-center">
-                        <h3 className="text-xl md:text-2xl font-black text-white mb-2 group-hover:underline underline-offset-4">
+                        <h3 className="text-xl md:text-2xl font-black text-black mb-2 group-hover:underline underline-offset-4">
                           {recipe.title}
                         </h3>
 
-                        <div className="flex items-center gap-4 text-xs text-white/60">
+                        <div className="flex items-center gap-4 text-xs text-black/70">
                           {recipe.servings && (
                             <span>{recipe.servings} servings</span>
                           )}
@@ -320,7 +320,7 @@ export const RecipesShowcase: React.FC = () => {
                 <>
                   <button
                     onClick={prevSlide}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 text-black flex items-center justify-center hover:bg-white transition-colors z-10"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
                     aria-label="Previous slide"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,7 +329,7 @@ export const RecipesShowcase: React.FC = () => {
                   </button>
                   <button
                     onClick={nextSlide}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 text-black flex items-center justify-center hover:bg-white transition-colors z-10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
                     aria-label="Next slide"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,7 +347,7 @@ export const RecipesShowcase: React.FC = () => {
                         aria-label={`Go to slide ${index + 1}`}
                       >
                         <span className={`block rounded-full transition-all ${
-                          index === currentSlide ? 'bg-white w-8 h-2' : 'bg-white/40 w-2 h-2'
+                          index === currentSlide ? 'bg-black w-8 h-2' : 'bg-black/40 w-2 h-2'
                         }`} />
                       </button>
                     ))}
@@ -364,7 +364,7 @@ export const RecipesShowcase: React.FC = () => {
                   href={`/recipes/${recipe.slug}`}
                   className="showcase-small-card group block"
                 >
-                <div className="grid grid-cols-5 gap-6 bg-white/5 hover:bg-white/10 transition-colors overflow-hidden">
+                <div className="grid grid-cols-5 gap-6 bg-black/5 hover:bg-black/10 transition-colors overflow-hidden">
                   {/* Image */}
                   <div className="col-span-2 relative aspect-square bg-gray-900">
                     {recipe.images?.[0]?.url && (
@@ -389,11 +389,11 @@ export const RecipesShowcase: React.FC = () => {
 
                   {/* Content */}
                   <div className="col-span-3 py-4 pr-4 flex flex-col justify-center">
-                    <h3 className="text-xl md:text-2xl font-black text-white mb-2 group-hover:underline underline-offset-4">
+                    <h3 className="text-xl md:text-2xl font-black text-black mb-2 group-hover:underline underline-offset-4">
                       {recipe.title}
                     </h3>
 
-                    <div className="flex items-center gap-4 text-xs text-white/60">
+                    <div className="flex items-center gap-4 text-xs text-black/70">
                       {recipe.servings && (
                         <span>{recipe.servings} servings</span>
                       )}
@@ -412,11 +412,11 @@ export const RecipesShowcase: React.FC = () => {
         <div className="mt-16 text-center">
           <Link
             href="/recipes"
-            className="inline-flex items-center gap-4 text-sm tracking-[0.2em] uppercase font-bold group text-white"
+            className="inline-flex items-center gap-4 text-sm tracking-[0.2em] uppercase font-bold group text-black"
           >
             <span className="relative">
               Explore All Recipes
-              <span className="absolute bottom-0 left-0 w-0 h-px bg-white group-hover:w-full transition-all duration-300" />
+              <span className="absolute bottom-0 left-0 w-0 h-px bg-black group-hover:w-full transition-all duration-300" />
             </span>
             <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />

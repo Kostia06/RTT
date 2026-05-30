@@ -139,11 +139,6 @@ export default function AboutPage() {
           }}
         />
 
-        {/* Floating Kanji */}
-        <div className="hero-kanji absolute top-10 right-[5%] text-[35vw] font-black text-white/[0.02] leading-none pointer-events-none select-none">
-          敬意
-        </div>
-
         <div className="relative py-16 pt-20 sm:py-20 sm:pt-24">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             {/* Breadcrumb */}
@@ -241,10 +236,6 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Floating accent */}
-              <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-black flex items-center justify-center text-white">
-                <span className="text-4xl font-black">博多</span>
-              </div>
             </div>
           </div>
         </div>
@@ -332,14 +323,13 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-1" style={{ perspective: '1000px' }}>
             {[
-              { num: '01', title: 'AUTHENTICITY', kanji: '本物', desc: 'We don\'t take shortcuts or make compromises. Every bowl follows traditional Hakata methods passed down through generations.' },
-              { num: '02', title: 'PATIENCE', kanji: '忍耐', desc: 'Great ramen cannot be rushed. From 18-hour broths to carefully timed noodles, we give each element the time it deserves.' },
-              { num: '03', title: 'EDUCATION', kanji: '教育', desc: 'We believe in sharing our knowledge. Through recipes and products, we help others discover the art of authentic ramen.' },
+              { num: '01', title: 'AUTHENTICITY', desc: 'We don\'t take shortcuts or make compromises. Every bowl follows traditional Hakata methods passed down through generations.' },
+              { num: '02', title: 'PATIENCE', desc: 'Great ramen cannot be rushed. From 18-hour broths to carefully timed noodles, we give each element the time it deserves.' },
+              { num: '03', title: 'EDUCATION', desc: 'We believe in sharing our knowledge. Through recipes and products, we help others discover the art of authentic ramen.' },
             ].map((value, i) => (
               <div key={i} className="value-card bg-gray-50 p-10 group hover:bg-black hover:text-white transition-all duration-500">
                 <div className="flex items-start justify-between mb-8">
                   <span className="text-sm text-gray-400 group-hover:text-white/40 font-mono transition-colors">{value.num}</span>
-                  <span className="text-4xl text-gray-200 group-hover:text-white/20 transition-colors">{value.kanji}</span>
                 </div>
 
                 <h3 className="text-2xl font-black mb-4 tracking-[-0.02em]">{value.title}</h3>

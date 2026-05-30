@@ -363,9 +363,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
                       sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                      <span className="text-6xl text-gray-200">麺</span>
-                    </div>
+                    <div className="absolute inset-0 bg-gray-100" />
                   )}
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-300" />

@@ -32,11 +32,11 @@ export const Marquee: React.FC = () => {
   }, [isHovered]);
 
   const items = [
-    { text: 'AUTHENTIC HAKATA RAMEN', icon: '麺' },
-    { text: '18 HOUR BROTH', icon: '骨' },
-    { text: 'HAND-PULLED NOODLES', icon: '手' },
-    { text: 'CALGARY CRAFTED', icon: '心' },
-    { text: 'RESPECT THE TECHNIQUE', icon: '技' },
+    { text: 'AUTHENTIC HAKATA RAMEN' },
+    { text: '18 HOUR BROTH' },
+    { text: 'HAND-PULLED NOODLES' },
+    { text: 'CALGARY CRAFTED' },
+    { text: 'RESPECT THE TECHNIQUE' },
   ];
 
   return (
@@ -54,7 +54,6 @@ export const Marquee: React.FC = () => {
                 key={`${groupIndex}-${i}`}
                 className="mx-4 sm:mx-6 md:mx-8 text-[10px] sm:text-xs md:text-sm tracking-[0.2em] sm:tracking-[0.3em] text-white/60 uppercase flex items-center gap-3 sm:gap-4 md:gap-6 group-hover:text-white/80 transition-colors duration-300"
               >
-                <span className="text-lg sm:text-xl md:text-2xl opacity-30 group-hover:opacity-50 transition-opacity">{item.icon}</span>
                 <span className="font-medium">{item.text}</span>
                 <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2 bg-white/20 rotate-45 group-hover:bg-white/40 transition-colors" />
               </span>

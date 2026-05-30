@@ -149,10 +149,10 @@ export const Philosophy: React.FC = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
       {/* Massive scrolling text */}
       <div className="absolute top-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-none">
-        <span className="horizontal-text text-[15vw] sm:text-[18vw] md:text-[20vw] font-black text-white/[0.02] tracking-[-0.04em]">
+        <span className="horizontal-text text-[15vw] sm:text-[18vw] md:text-[20vw] font-black text-black/[0.02] tracking-[-0.04em]">
           PATIENCE • TECHNIQUE • TRADITION • PATIENCE • TECHNIQUE • TRADITION •
         </span>
       </div>
@@ -162,7 +162,7 @@ export const Philosophy: React.FC = () => {
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="philosophy-particle absolute w-1 h-1 bg-white/20 rounded-full"
+            className="philosophy-particle absolute w-1 h-1 bg-black/20 rounded-full"
             style={{
               left: `${15 + i * 15}%`,
               top: `${20 + (i % 3) * 25}%`,
@@ -187,16 +187,16 @@ export const Philosophy: React.FC = () => {
           {/* Left - Number & Statement */}
           <div className="philosophy-content">
             <div className="philosophy-header flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <div className="philosophy-line h-px bg-white/30 w-10 sm:w-16 origin-left" />
-              <span className="text-[10px] sm:text-xs md:text-sm tracking-[0.2em] sm:tracking-[0.3em] text-gray-400 uppercase">Our Philosophy</span>
+              <div className="philosophy-line h-px bg-black/30 w-10 sm:w-16 origin-left" />
+              <span className="text-[10px] sm:text-xs md:text-sm tracking-[0.2em] sm:tracking-[0.3em] text-gray-700 uppercase">Our Philosophy</span>
             </div>
 
             <div className="mb-8 sm:mb-12">
               <div className="flex items-baseline gap-2 sm:gap-4">
-                <span ref={numberRef} className="text-[80px] sm:text-[100px] md:text-[140px] lg:text-[180px] font-black leading-none text-white">
+                <span ref={numberRef} className="text-[80px] sm:text-[100px] md:text-[140px] lg:text-[180px] font-black leading-none text-black">
                   0
                 </span>
-                <div className="text-gray-400">
+                <div className="text-gray-600">
                   <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light">hours</span>
                   <br />
                   <span className="text-xs sm:text-sm md:text-base lg:text-lg">of slow-simmering</span>
@@ -207,12 +207,12 @@ export const Philosophy: React.FC = () => {
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-[-0.02em] mb-6 sm:mb-8 leading-tight">
               PATIENCE IS
               <br />
-              <span className="text-outline-white">THE SECRET</span>
+              <span className="text-outline-black">THE SECRET</span>
               <br />
               INGREDIENT
             </h2>
 
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed max-w-lg">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg">
               There are no shortcuts to greatness. Our tonkotsu broth is a
               testament to the Hakata tradition—a labor of love that cannot
               be rushed.
@@ -245,18 +245,18 @@ export const Philosophy: React.FC = () => {
             ].map((step, i) => (
               <div
                 key={i}
-                className="philosophy-step group border-t border-white/20 py-5 sm:py-6 md:py-8 hover:bg-white/5 transition-colors px-3 sm:px-4 md:px-6 -mx-3 sm:-mx-4 md:-mx-6"
+                className="philosophy-step group border-t border-black/20 py-5 sm:py-6 md:py-8 hover:bg-black/5 transition-colors px-3 sm:px-4 md:px-6 -mx-3 sm:-mx-4 md:-mx-6"
               >
                 <div className="flex items-start gap-4 sm:gap-6 md:gap-8">
-                  <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-mono mt-0.5 sm:mt-1">{step.num}</span>
+                  <span className="text-[10px] sm:text-xs md:text-sm text-gray-700 font-mono mt-0.5 sm:mt-1">{step.num}</span>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 group-hover:translate-x-2 transition-transform text-white">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 group-hover:translate-x-2 transition-transform text-black">
                       {step.title}
                     </h3>
-                    <p className="text-xs sm:text-sm md:text-base text-gray-400 leading-relaxed">{step.desc}</p>
+                    <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">{step.desc}</p>
                   </div>
-                  <div className="hidden sm:flex items-center justify-center w-8 h-8 md:w-10 md:h-10 border border-white/10 group-hover:border-white/30 transition-colors flex-shrink-0">
-                    <svg className="w-3 h-3 md:w-4 md:h-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="hidden sm:flex items-center justify-center w-8 h-8 md:w-10 md:h-10 border border-black/10 group-hover:border-black/30 transition-colors flex-shrink-0">
+                    <svg className="w-3 h-3 md:w-4 md:h-4 text-black/50 group-hover:text-black/70 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -268,13 +268,13 @@ export const Philosophy: React.FC = () => {
       </div>
 
       <style jsx>{`
-        .text-outline-white {
-          -webkit-text-stroke: 1px white;
+        .text-outline-black {
+          -webkit-text-stroke: 1px black;
           color: transparent;
         }
         @media (min-width: 640px) {
-          .text-outline-white {
-            -webkit-text-stroke: 1.5px white;
+          .text-outline-black {
+            -webkit-text-stroke: 1.5px black;
           }
         }
       `}</style>

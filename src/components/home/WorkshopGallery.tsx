@@ -157,17 +157,17 @@ export const WorkshopGallery: React.FC = () => {
   const title = 'BEHIND THE SCENES';
 
   return (
-    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
+    <section ref={sectionRef} className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 sm:py-16 md:py-20 lg:py-24">
         {/* Header */}
         <div className="mb-20 text-center">
           <div className="flex items-center justify-center gap-6 mb-8">
-            <div className="h-px bg-black/20 w-16" />
-            <span className="text-sm tracking-[0.3em] text-gray-500 uppercase">Our Workshops</span>
-            <div className="h-px bg-black/20 w-16" />
+            <div className="h-px bg-white/20 w-16" />
+            <span className="text-sm tracking-[0.3em] text-gray-400 uppercase">Our Workshops</span>
+            <div className="h-px bg-white/20 w-16" />
           </div>
 
-          <h2 className="gallery-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-[-0.04em] text-black mb-6 overflow-visible py-2 break-words">
+          <h2 className="gallery-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-[-0.04em] text-white mb-6 overflow-visible py-2 break-words">
             {title.split('').map((char, i) => (
               <span key={i} className="gallery-title-char inline-block will-change-transform">
                 {char === ' ' ? '\u00A0' : char}
@@ -175,7 +175,7 @@ export const WorkshopGallery: React.FC = () => {
             ))}
           </h2>
 
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
+          <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto px-4">
             Experience the art of traditional ramen making. Watch our students
             transform from curious beginners to confident noodle masters.
           </p>
@@ -191,7 +191,7 @@ export const WorkshopGallery: React.FC = () => {
             {workshopImages.map((image, index) => (
               <div
                 key={index}
-                className="gallery-item group relative aspect-[3/4] bg-gray-100 overflow-hidden cursor-pointer w-[75vw] sm:w-[60vw] md:w-[45vw] snap-center flex-shrink-0"
+                className="gallery-item group relative aspect-[3/4] bg-gray-900 overflow-hidden cursor-pointer w-[75vw] sm:w-[60vw] md:w-[45vw] snap-center flex-shrink-0"
               >
                 <div className="gallery-image absolute inset-0">
                   <Image
@@ -218,7 +218,7 @@ export const WorkshopGallery: React.FC = () => {
             <>
               <button
                 onClick={prevSlide}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/80 text-black flex items-center justify-center hover:bg-white transition-colors z-10"
                 aria-label="Previous slide"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@ export const WorkshopGallery: React.FC = () => {
               </button>
               <button
                 onClick={nextSlide}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-black/80 text-white flex items-center justify-center hover:bg-black transition-colors z-10"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/80 text-black flex items-center justify-center hover:bg-white transition-colors z-10"
                 aria-label="Next slide"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,7 +245,7 @@ export const WorkshopGallery: React.FC = () => {
                     aria-label={`Go to slide ${index + 1}`}
                   >
                     <span className={`block rounded-full transition-all ${
-                      index === currentSlide ? 'bg-black w-8 h-2' : 'bg-black/40 w-2 h-2'
+                      index === currentSlide ? 'bg-white w-8 h-2' : 'bg-white/40 w-2 h-2'
                     }`} />
                   </button>
                 ))}
@@ -259,7 +259,7 @@ export const WorkshopGallery: React.FC = () => {
           {workshopImages.map((image, index) => (
             <div
               key={index}
-              className="gallery-item group relative aspect-[3/4] bg-gray-100 overflow-hidden cursor-pointer"
+              className="gallery-item group relative aspect-[3/4] bg-gray-900 overflow-hidden cursor-pointer"
             >
               <div className="gallery-image absolute inset-0">
                 <Image
@@ -286,7 +286,7 @@ export const WorkshopGallery: React.FC = () => {
         <div className="mt-16 text-center">
           <Link
             href="/workshops"
-            className="inline-flex items-center gap-4 px-8 py-4 bg-black text-white text-sm tracking-[0.2em] uppercase font-bold hover:bg-gray-900 transition-colors group"
+            className="inline-flex items-center gap-4 px-8 py-4 bg-white text-black text-sm tracking-[0.2em] uppercase font-bold hover:bg-gray-200 transition-colors group"
           >
             <span>Join A Workshop</span>
             <svg className="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

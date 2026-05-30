@@ -164,7 +164,7 @@ export const Newsletter: React.FC = () => {
         <div className="newsletter-content text-center">
           <div className="newsletter-header flex items-center justify-center gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="newsletter-line h-px bg-black/20 w-10 sm:w-16 origin-right" />
-            <span className="text-[10px] sm:text-xs md:text-sm tracking-[0.2em] sm:tracking-[0.3em] text-gray-500 uppercase">Newsletter</span>
+            <span className="text-[10px] sm:text-xs md:text-sm tracking-[0.2em] sm:tracking-[0.3em] text-gray-700 uppercase">Newsletter</span>
             <div className="newsletter-line h-px bg-black/20 w-10 sm:w-16 origin-left" />
           </div>
 
@@ -223,7 +223,7 @@ export const Newsletter: React.FC = () => {
                   )}
                 </button>
               </div>
-              <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-gray-500">
+              <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs text-gray-700">
                 No spam. Unsubscribe anytime. Privacy matters.
               </p>
             </form>

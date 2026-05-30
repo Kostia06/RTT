@@ -12,11 +12,11 @@ import { useCart } from '@/components/providers/CartProvider';
 gsap.registerPlugin(ScrollTrigger);
 
 const categories = [
-  { id: '', label: 'All', kanji: '全' },
-  { id: 'ramen-noodles', label: 'Noodles', kanji: '麺' },
-  { id: 'sauces', label: 'Sauces', kanji: '味' },
-  { id: 'ramen-bowl', label: 'Bowls', kanji: '丼' },
-  { id: 'merchandise', label: 'Merch', kanji: '物' },
+  { id: '', label: 'All' },
+  { id: 'ramen-noodles', label: 'Noodles' },
+  { id: 'sauces', label: 'Sauces' },
+  { id: 'ramen-bowl', label: 'Bowls' },
+  { id: 'merchandise', label: 'Merch' },
 ];
 
 function ShopContent() {
@@ -175,11 +175,6 @@ function ShopContent() {
           }}
         />
 
-        {/* Floating Kanji with Parallax */}
-        <div className="hero-kanji absolute top-10 right-[5%] text-[35vw] font-black text-white/[0.02] pointer-events-none select-none">
-          品
-        </div>
-
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pt-20 sm:py-20 sm:pt-24">
           {/* Breadcrumb */}
           <div className="flex items-center gap-3 mb-6 text-sm text-white/60">
@@ -292,9 +287,7 @@ function ShopContent() {
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                          <span className="text-6xl text-gray-200">麺</span>
-                        </div>
+                        <div className="absolute inset-0 bg-gray-100" />
                       )}
                     </div>
 

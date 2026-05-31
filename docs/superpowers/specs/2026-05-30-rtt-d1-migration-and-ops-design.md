@@ -1,7 +1,9 @@
 # RTT — D1/Better Auth Migration + Admin Operations System
 
 **Date:** 2026-05-30
-**Status:** Draft for review
+**Status:** Approved — in progress
+
+> **UPDATE (2026-05-31): GREENFIELD.** The D1 database is created **from scratch** — no Supabase data is imported. All "migrate existing data" / ETL / live-schema-dump work (originally Task 6 and the §7 ETL step) is **dropped**. Tables are defined fresh in Drizzle from the app's types/usage and populated with **seed data**. No Supabase credentials are needed.
 
 ## 1. Goals
 

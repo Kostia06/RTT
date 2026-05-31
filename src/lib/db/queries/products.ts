@@ -17,7 +17,7 @@ export async function getActiveProducts(db: Db, f: ProductFilter) {
   if (f.category && f.category !== 'all') where.push(eq(products.category, f.category));
   if (f.featured) where.push(eq(products.featured, true));
 
-  let q = db.select().from(products).where(and(...where)).orderBy(desc(products.created_at));
+  let q = db.select().from(products).where(and(...where)).orderBy(desc(products.featured), desc(products.created_at));
   if (f.limit) q = q.limit(f.limit) as typeof q;
   if (f.skip) q = q.offset(f.skip) as typeof q;
   return q;

@@ -14,5 +14,13 @@ export function makeTestDb() {
     active INTEGER NOT NULL DEFAULT 1, featured INTEGER NOT NULL DEFAULT 0,
     storage_locations TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
   );`);
+  sqlite.exec(`CREATE TABLE recipes (
+    id TEXT PRIMARY KEY, title TEXT NOT NULL, slug TEXT NOT NULL UNIQUE,
+    description TEXT, difficulty TEXT NOT NULL, servings INTEGER NOT NULL DEFAULT 1,
+    ingredients TEXT NOT NULL DEFAULT '[]', instructions TEXT NOT NULL DEFAULT '[]',
+    nutritional_info TEXT, images TEXT NOT NULL DEFAULT '[]', tips TEXT,
+    active INTEGER NOT NULL DEFAULT 1, featured INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  );`);
   return drizzle(sqlite, { schema });
 }

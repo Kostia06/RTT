@@ -64,6 +64,18 @@ export const LocationHours = () => (
           ))}
         </dl>
       </div>
+
+      <div className="mt-12 h-72 w-full overflow-hidden border border-black/10 sm:h-80">
+        <iframe
+          title="Map to Respect the Technique"
+          src="https://www.google.com/maps?q=4093+Ogden+Rd+SE,+Calgary,+AB+T2G+4P9&output=embed"
+          className="h-full w-full grayscale-[0.2]"
+          style={{ border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          allowFullScreen
+        />
+      </div>
     </div>
   </section>
 );

@@ -21,10 +21,11 @@ export const Header: React.FC = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);
 
-  // Pages with dark hero sections that should have transparent navbar initially
-  const darkHeroPages = ['/', '/shop', '/recipes', '/workshops', '/about'];
+  // Pages with dark hero sections that should have transparent navbar initially.
+  // The homepage hero is now light, so it uses the solid white navbar (dark text).
+  const darkHeroPages = ['/shop', '/recipes', '/about'];
   const hasDarkHero = darkHeroPages.some(page =>
-    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/recipes/') || pathname?.startsWith('/workshops') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/')
+    pathname === page || pathname?.startsWith('/shop/') || pathname?.startsWith('/recipes/') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin/')
   );
 
   // Auth pages should have black navbar

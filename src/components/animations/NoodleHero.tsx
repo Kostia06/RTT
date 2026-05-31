@@ -23,7 +23,7 @@ export const NoodleHero: React.FC = () => {
       .fromTo(
         '.hero-logo-bg',
         { scale: 0, rotation: 180, opacity: 0 },
-        { scale: 1, rotation: -45, opacity: 0.1, duration: 1.5, ease: 'back.out(1.2)' },
+        { scale: 1, rotation: 0, opacity: 0.85, duration: 1.5, ease: 'back.out(1.2)' },
         '-=1'
       )
       .fromTo(

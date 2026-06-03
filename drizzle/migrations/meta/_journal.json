@@ -15,6 +15,13 @@
       "when": 1780250311002,
       "tag": "0001_tired_tinkerer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780463327072,
+      "tag": "0002_chilly_switch",
+      "breakpoints": true
     }
   ]
 }

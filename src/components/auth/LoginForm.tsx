@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { signIn } from '@/lib/auth/client';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export const LoginForm: React.FC = () => {
   const router = useRouter();
   const [error, setError] = useState<string>('');
-  const supabase = createClient();
   const {
     register,
     handleSubmit,
@@ -30,13 +29,13 @@ export const LoginForm: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError('');
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await signIn.email({
         email: data.email,
         password: data.password,
       });
 
       if (signInError) {
-        setError(signInError.message);
+        setError(signInError.message ?? 'Sign in failed. Please try again.');
         return;
       }
 

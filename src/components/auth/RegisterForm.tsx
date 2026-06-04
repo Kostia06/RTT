@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { signUp } from '@/lib/auth/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,9 +20,8 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export const RegisterForm: React.FC = () => {
-  const router = useRouter();
   const [error, setError] = useState<string>('');
-  const supabase = createClient();
+  const [verificationSent, setVerificationSent] = useState(false);
   const {
     register,
     handleSubmit,
@@ -36,32 +34,43 @@ export const RegisterForm: React.FC = () => {
     try {
       setError('');
 
-      // Register with Supabase
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await signUp.email({
         email: data.email,
         password: data.password,
-        options: {
-          data: {
-            name: data.name,
-          },
-        },
+        name: data.name,
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        setError(signUpError.message ?? 'Registration failed. Please try again.');
         return;
       }
 
-      // Auto-login after successful registration
-      if (authData.user) {
-        router.push('/account');
-        router.refresh();
-      }
+      // Email verification is required — show notice instead of redirecting
+      setVerificationSent(true);
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Registration error:', err);
     }
   };
+
+  if (verificationSent) {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="bg-green-50 border-l-4 border-green-600 p-6 text-left">
+          <p className="text-sm font-bold text-green-800 mb-1">Check your email</p>
+          <p className="text-sm text-green-700">
+            We sent a verification link to your email address. Click the link to activate your account before signing in.
+          </p>
+        </div>
+        <Link
+          href="/login"
+          className="block w-full px-8 py-4 border-2 border-black text-black text-xs font-bold tracking-[0.2em] uppercase text-center hover:bg-black hover:text-white transition-all duration-300"
+        >
+          Go to Sign In
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

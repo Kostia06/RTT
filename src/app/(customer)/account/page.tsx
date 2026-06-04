@@ -45,10 +45,10 @@ export default function AccountPage() {
         <div className="bg-white p-8 shadow-sm mb-8">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-black text-white flex items-center justify-center text-2xl font-bold rounded-full">
-              {user?.user_metadata?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+              {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-black">{user?.user_metadata?.name || 'User'}</h2>
+              <h2 className="text-xl font-bold text-black">{user?.name || 'User'}</h2>
               <p className="text-gray-600">{user?.email}</p>
             </div>
           </div>

@@ -25,9 +25,9 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.user_metadata?.name || '',
+        name: user.name || '',
         email: user.email || '',
-        phone: user.user_metadata?.phone || '',
+        phone: '' /* TODO: migrate phone to a profile table */,
       });
     }
   }, [user]);

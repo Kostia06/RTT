@@ -33,7 +33,7 @@ export default function ProductionLogsPage() {
     end_date: '',
   });
 
-  const isManager = isAdmin || user?.user_metadata?.role === 'manager';
+  const isManager = isAdmin || user?.role === 'manager';
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || !isEmployee)) {

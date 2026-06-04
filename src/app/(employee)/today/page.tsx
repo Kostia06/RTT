@@ -44,7 +44,7 @@ export default function TodayPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myShift, setMyShift] = useState<Shift | null>(null);
   const [allShifts, setAllShifts] = useState<Shift[]>([]);
-  const isManager = isAdmin || user?.user_metadata?.role === 'manager';
+  const isManager = isAdmin || user?.role === 'manager';
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || !isEmployee)) {

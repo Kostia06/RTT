@@ -39,7 +39,7 @@ function ClockInContent() {
     // If manual mode and user is logged in, auto-select them
     if (!isQRMode && isAuthenticated && user) {
       setSelectedEmployeeId(user.id);
-      setSelectedEmployeeName(user.user_metadata?.name || user.email || 'You');
+      setSelectedEmployeeName(user.name || user.email || 'You');
     }
   }, [isAuthenticated, user, isQRMode]);
 

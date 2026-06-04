@@ -184,7 +184,7 @@ export default function EmployeeDashboard() {
             </h1>
 
             <p className="text-sm sm:text-base text-white/60 max-w-2xl break-words mb-8">
-              Welcome back, <span className="inline-block font-bold text-white">{user?.user_metadata?.name || 'Team Member'}</span>
+              Welcome back, <span className="inline-block font-bold text-white">{user?.name || 'Team Member'}</span>
             </p>
 
             {/* Quick Stats */}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { createClient } from '@/lib/supabase/client';
+import { signOut } from '@/lib/auth/client';
 import { CartIcon } from '@/components/cart/CartIcon';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
@@ -94,8 +94,7 @@ export const Header: React.FC = () => {
   }, [mobileMenuOpen]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     window.location.href = '/';
   };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/hooks/useAuth';
-import { createClient } from '@/lib/supabase/client';
+import { signOut } from '@/lib/auth/client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -10,7 +10,6 @@ import { Button } from '@/components/ui';
 export default function AccountPage() {
   const { user, isAuthenticated, isLoading, isEmployee } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -31,7 +30,7 @@ export default function AccountPage() {
   }
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push('/');
     router.refresh();
   };

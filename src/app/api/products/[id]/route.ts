@@ -1,126 +1,109 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-
-// UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { getDb } from '@/lib/db/client';
+import { products, product_variants, related_products } from '@/lib/db/schema';
+import { and, asc, eq, inArray, ne, or } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const db = await getDb();
     const { id } = await params;
 
-    // Build query
-    let query = supabase
-      .from('products')
-      .select('*')
-      .eq('active', true);
+    // Match by id OR slug — seeded products use non-UUID ids (e.g.
+    // `prod-tonkotsu-kit`), so a UUID-shape heuristic misroutes them to a slug
+    // lookup and fails. Matching both handles slugs (public detail page) and
+    // ids (admin edit links) regardless of id format.
+    const where = and(
+      eq(products.active, true),
+      or(eq(products.id, id), eq(products.slug, id))
+    );
 
-    // Determine if id is UUID or slug
-    if (UUID_REGEX.test(id)) {
-      query = query.eq('id', id);
-    } else {
-      query = query.eq('slug', id);
-    }
+    const productRows = await db.select().from(products).where(where).limit(1);
+    const product = productRows[0];
 
-    const { data: product, error } = await query.single();
-
-    if (error || !product) {
+    if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
       );
     }
 
-    // Try to fetch variants (table might not exist yet)
-    let variants: any[] = [];
-    try {
-      const { data: variantsData, error: variantsError } = await supabase
-        .from('product_variants')
-        .select('*')
-        .eq('product_id', product.id)
-        .eq('active', true);
+    // Fetch variants for this product
+    const variantRows = await db
+      .select()
+      .from(product_variants)
+      .where(eq(product_variants.product_id, product.id));
 
-      if (variantsError) {
-        console.error('Error fetching variants:', variantsError);
-      } else if (variantsData && variantsData.length > 0) {
-        variants = variantsData.map((v: any) => ({
-          id: v.id,
-          name: v.name,
-          sku: v.sku,
-          size: v.size,
-          packQuantity: v.pack_quantity,
-          price: parseFloat(v.price),
-          stock: v.stock,
-        }));
-        console.log(`Found ${variants.length} variants for product ${product.id}`);
-      } else {
-        console.log(`No variants found for product ${product.id}`);
-      }
-    } catch (err) {
-      // Table doesn't exist yet, skip variants
-      console.error('Error with product_variants table:', err);
+    const variants = variantRows.map((v) => ({
+      id: v.id,
+      name: v.name,
+      sku: v.sku,
+      price: v.price,
+      stock: v.stock,
+      options: v.options,
+    }));
+
+    // Fetch explicitly related products
+    const relatedRows = await db
+      .select()
+      .from(related_products)
+      .where(eq(related_products.product_id, product.id))
+      .orderBy(asc(related_products.sort_order));
+
+    let relatedProducts: Array<{
+      id: string;
+      name: string;
+      slug: string;
+      description: string | null;
+      price: number;
+      images: unknown;
+      category: string;
+    }> = [];
+
+    if (relatedRows.length > 0) {
+      const productIds = relatedRows.map((rp) => rp.related_product_id);
+      const relatedDetails = await db
+        .select()
+        .from(products)
+        .where(and(inArray(products.id, productIds), eq(products.active, true)));
+
+      relatedProducts = relatedDetails.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description,
+        price: p.price_regular,
+        images: p.images,
+        category: p.category,
+      }));
     }
 
-    // Try to fetch similar/related products
-    let relatedProducts: any[] = [];
-    try {
-      // First try to get explicitly related products
-      const { data: relatedProductsData } = await supabase
-        .from('related_products')
-        .select('related_product_id, relationship_type, sort_order')
-        .eq('product_id', product.id)
-        .order('sort_order', { ascending: true });
+    // If no related products found, get similar products from same category
+    if (relatedProducts.length === 0) {
+      const similar = await db
+        .select()
+        .from(products)
+        .where(
+          and(
+            eq(products.category, product.category),
+            eq(products.active, true),
+            ne(products.id, product.id)
+          )
+        )
+        .limit(4);
 
-      if (relatedProductsData && relatedProductsData.length > 0) {
-        // Fetch the actual products
-        const productIds = relatedProductsData.map(rp => rp.related_product_id);
-        const { data: relatedProductDetails } = await supabase
-          .from('products')
-          .select('id, name, slug, description, price_regular, images, category')
-          .in('id', productIds)
-          .eq('active', true);
-
-        if (relatedProductDetails) {
-          relatedProducts = relatedProductDetails.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            slug: p.slug,
-            description: p.description,
-            price: parseFloat(p.price_regular),
-            images: p.images,
-            category: p.category,
-          }));
-        }
-      }
-
-      // If no related products found, get similar products from same category
-      if (relatedProducts.length === 0) {
-        const { data: similarProducts } = await supabase
-          .from('products')
-          .select('id, name, slug, description, price_regular, images, category')
-          .eq('category', product.category)
-          .eq('active', true)
-          .neq('id', product.id)
-          .limit(4);
-
-        if (similarProducts) {
-          relatedProducts = similarProducts.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            slug: p.slug,
-            description: p.description,
-            price: parseFloat(p.price_regular),
-            images: p.images,
-            category: p.category,
-          }));
-        }
-      }
-    } catch (err) {
-      // Table doesn't exist yet, skip related products
-      console.log('Error fetching related products:', err);
+      relatedProducts = similar.map((p) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description,
+        price: p.price_regular,
+        images: p.images,
+        category: p.category,
+      }));
     }
 
     return NextResponse.json({
@@ -143,42 +126,94 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
   try {
-    const supabase = await createClient();
+    const db = await getDb();
     const { id } = await params;
     const body = await request.json();
 
-    // Validate ID is UUID
-    if (!UUID_REGEX.test(id)) {
-      return NextResponse.json(
-        { error: 'Invalid product ID' },
-        { status: 400 }
-      );
-    }
-
     // Update the product
-    const { data: product, error } = await supabase
-      .from('products')
-      .update({
+    const updated = await db
+      .update(products)
+      .set({
         name: body.name,
         description: body.description,
         price_regular: body.price_regular,
         category: body.category,
         slug: body.slug,
         images: body.images,
-        is_featured: body.is_featured,
+        featured: body.featured ?? body.is_featured,
         nutritional_info: body.nutritional_info,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
-      .select()
-      .single();
+      .where(eq(products.id, id))
+      .returning();
 
-    if (error) {
-      console.error('Error updating product:', error);
+    const product = updated[0];
+
+    if (!product) {
       return NextResponse.json(
-        { error: 'Failed to update product', details: error.message },
-        { status: 500 }
+        { error: 'Product not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ product }, { status: 200 });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    return NextResponse.json(
+      { error: 'Failed to update product' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
+  try {
+    const db = await getDb();
+    const { id } = await params;
+    const body = await request.json();
+
+    const updateData: Partial<typeof products.$inferInsert> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.price_regular !== undefined) updateData.price_regular = body.price_regular;
+    if (body.price_bulk !== undefined) updateData.price_bulk = body.price_bulk;
+    if (body.price_cost !== undefined) updateData.price_cost = body.price_cost;
+    if (body.category !== undefined) updateData.category = body.category;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+    if (body.sku !== undefined) updateData.sku = body.sku;
+    if (body.images !== undefined) updateData.images = body.images;
+    if (body.stock !== undefined) updateData.stock = body.stock;
+    if (body.unit !== undefined) updateData.unit = body.unit;
+    if (body.nutritional_info !== undefined) updateData.nutritional_info = body.nutritional_info;
+    if (body.cooking_instructions !== undefined) updateData.cooking_instructions = body.cooking_instructions;
+    if (body.active !== undefined) updateData.active = body.active;
+    if (body.featured !== undefined) updateData.featured = body.featured;
+    else if (body.is_featured !== undefined) updateData.featured = body.is_featured;
+
+    const updated = await db
+      .update(products)
+      .set(updateData)
+      .where(eq(products.id, id))
+      .returning();
+
+    const product = updated[0];
+
+    if (!product) {
+      return NextResponse.json(
+        { error: 'Product not found' },
+        { status: 404 }
       );
     }
 
@@ -196,34 +231,21 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
   try {
-    const supabase = await createClient();
+    const db = await getDb();
     const { id } = await params;
 
-    // Validate ID is UUID
-    if (!UUID_REGEX.test(id)) {
-      return NextResponse.json(
-        { error: 'Invalid product ID' },
-        { status: 400 }
-      );
-    }
-
     // Soft delete by setting active to false
-    const { error } = await supabase
-      .from('products')
-      .update({
+    await db
+      .update(products)
+      .set({
         active: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting product:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete product', details: error.message },
-        { status: 500 }
-      );
-    }
+      .where(eq(products.id, id));
 
     return NextResponse.json(
       { message: 'Product deleted successfully' },

@@ -1,59 +1,37 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-
-// UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { getDb } from '@/lib/db/client';
+import { recipes } from '@/lib/db/schema';
+import { and, eq, ne, or } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const db = await getDb();
     const { id } = await params;
 
-    // Check if this is an employee request (no active filter for employees)
-    const { data: { user } } = await supabase.auth.getUser();
-    const isEmployee = !!user;
+    // Public storefront detail endpoint: only active recipes are returned.
+    // Match by id OR slug so admin edit links (which pass the recipe id, e.g.
+    // the seeded `seed-r1`) load correctly alongside slug-based storefront URLs.
+    const where = and(
+      eq(recipes.active, true),
+      or(eq(recipes.id, id), eq(recipes.slug, id))
+    );
 
-    // Build query
-    let query = supabase
-      .from('recipes')
-      .select('*');
+    const rows = await db.select().from(recipes).where(where).limit(1);
+    const recipe = rows[0];
 
-    // Only filter by active for public requests
-    if (!isEmployee) {
-      query = query.eq('active', true);
-    }
-
-    // Determine if id is UUID or slug
-    if (UUID_REGEX.test(id)) {
-      query = query.eq('id', id);
-    } else {
-      query = query.eq('slug', id);
-    }
-
-    const { data: recipe, error } = await query.single();
-
-    if (error || !recipe) {
+    if (!recipe) {
       return NextResponse.json(
         { error: 'Recipe not found' },
         { status: 404 }
       );
     }
 
-    // Parse JSON fields
-    const parsedRecipe = {
-      ...recipe,
-      ingredients: typeof recipe.ingredients === 'string' ? JSON.parse(recipe.ingredients) : recipe.ingredients,
-      instructions: typeof recipe.instructions === 'string' ? JSON.parse(recipe.instructions) : recipe.instructions,
-      images: typeof recipe.images === 'string' ? JSON.parse(recipe.images) : recipe.images,
-      nutritional_info: recipe.nutritional_info && typeof recipe.nutritional_info === 'string'
-        ? JSON.parse(recipe.nutritional_info)
-        : recipe.nutritional_info,
-    };
-
-    return NextResponse.json({ recipe: parsedRecipe }, { status: 200 });
+    // JSON columns are already parsed by Drizzle (mode: 'json').
+    return NextResponse.json({ recipe }, { status: 200 });
   } catch (error) {
     console.error('Error fetching recipe:', error);
     return NextResponse.json(
@@ -67,15 +45,11 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
   try {
-    const supabase = await createClient();
-
-    // Check if user is authenticated and is an employee/admin
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const db = await getDb();
     const { id } = await params;
     const body = await request.json();
     const {
@@ -102,44 +76,43 @@ export async function PUT(
     }
 
     // Check if slug already exists for a different recipe
-    const { data: existingRecipe } = await supabase
-      .from('recipes')
-      .select('id')
-      .eq('slug', slug)
-      .neq('id', id)
-      .single();
+    const existing = await db
+      .select({ id: recipes.id })
+      .from(recipes)
+      .where(and(eq(recipes.slug, slug), ne(recipes.id, id)))
+      .limit(1);
 
-    if (existingRecipe) {
+    if (existing[0]) {
       return NextResponse.json(
         { error: 'A recipe with this slug already exists' },
         { status: 400 }
       );
     }
 
-    // Update recipe
-    const { data: recipe, error } = await supabase
-      .from('recipes')
-      .update({
+    // Update recipe. JSON columns are serialized by Drizzle (mode: 'json').
+    const updated = await db
+      .update(recipes)
+      .set({
         title,
         slug,
         description,
         difficulty,
         servings,
-        ingredients: JSON.stringify(ingredients),
-        instructions: JSON.stringify(instructions),
-        nutritional_info: nutritional_info ? JSON.stringify(nutritional_info) : null,
-        images: JSON.stringify(images || []),
+        ingredients,
+        instructions,
+        nutritional_info: nutritional_info ?? null,
+        images: images ?? [],
         tips,
         active,
         featured,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
-      .select()
-      .single();
+      .where(eq(recipes.id, id))
+      .returning();
 
-    if (error) {
-      console.error('Database error:', error);
+    const recipe = updated[0];
+
+    if (!recipe) {
       return NextResponse.json(
         { error: 'Failed to update recipe' },
         { status: 500 }
@@ -163,33 +136,87 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
+  try {
+    const db = await getDb();
+    const { id } = await params;
+    const body = await request.json();
+
+    // If updating slug, ensure it is unique among other recipes.
+    if (body.slug !== undefined) {
+      const existing = await db
+        .select({ id: recipes.id })
+        .from(recipes)
+        .where(and(eq(recipes.slug, body.slug), ne(recipes.id, id)))
+        .limit(1);
+
+      if (existing[0]) {
+        return NextResponse.json(
+          { error: 'A recipe with this slug already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const updateData: Partial<typeof recipes.$inferInsert> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.difficulty !== undefined) updateData.difficulty = body.difficulty;
+    if (body.servings !== undefined) updateData.servings = body.servings;
+    if (body.ingredients !== undefined) updateData.ingredients = body.ingredients;
+    if (body.instructions !== undefined) updateData.instructions = body.instructions;
+    if (body.nutritional_info !== undefined) updateData.nutritional_info = body.nutritional_info;
+    if (body.images !== undefined) updateData.images = body.images;
+    if (body.tips !== undefined) updateData.tips = body.tips;
+    if (body.active !== undefined) updateData.active = body.active;
+    if (body.featured !== undefined) updateData.featured = body.featured;
+
+    const updated = await db
+      .update(recipes)
+      .set(updateData)
+      .where(eq(recipes.id, id))
+      .returning();
+
+    const recipe = updated[0];
+
+    if (!recipe) {
+      return NextResponse.json(
+        { error: 'Recipe not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, recipe });
+  } catch (error) {
+    console.error('Error updating recipe:', error);
+    return NextResponse.json(
+      { error: 'Failed to update recipe' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
   try {
-    const supabase = await createClient();
-
-    // Check if user is authenticated and is an employee/admin
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const db = await getDb();
     const { id } = await params;
 
-    const { error } = await supabase
-      .from('recipes')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Database error:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete recipe' },
-        { status: 500 }
-      );
-    }
+    await db.delete(recipes).where(eq(recipes.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

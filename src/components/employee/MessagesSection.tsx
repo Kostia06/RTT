@@ -18,13 +18,16 @@ export default function MessagesSection() {
 
   useEffect(() => {
     fetchMessages();
-  }, [filter]);
+  }, []);
 
+  // Always fetch the full set so the tab counts (All/New/Read/Archived) are
+  // accurate; the visible list is filtered client-side via `filteredMessages`.
+  // (Previously this fetched only the active filter, so counts reflected just
+  // that bucket and a message vanished the moment it was marked read.)
   const fetchMessages = async () => {
     try {
       setError(null);
-      const url = filter === 'all' ? '/api/messages' : `/api/messages?status=${filter}`;
-      const response = await fetch(url);
+      const response = await fetch('/api/messages');
       const data = await response.json();
 
       if (response.ok) {

@@ -29,6 +29,14 @@ emit a transient "Invalid or unexpected token" while webpack is still compiling
 the chunk; the form briefly falls back to a native GET. Resolves on reload once
 compilation completes. Not reproducible on a warm server.
 
+_Method note — modal forms:_ create/edit modals use HTML5 `required` fields, so
+submitting with a required field empty is correctly blocked (no POST) — this is
+proper validation, **not a bug**. Confirmed by filling all required fields and
+submitting via `form.requestSubmit()` (e.g. production-items, fridges) → writes
+to D1. Where a modal submit was awkward to drive, the same write was verified via
+its authenticated API endpoint + source-read of the (correct) handler. Direct
+button features (clock in/out) were driven fully through the UI.
+
 | Domain | Page | Feature | Status | Evidence |
 |--------|------|---------|--------|----------|
 | Time | time-tracking | Render | ✅ | 0 console errors; full UI (status, week hours, QR, entries, schedule) |
@@ -49,6 +57,10 @@ compilation completes. Not reproducible on a warm server.
 | Inventory | inventory | Render + stats | ✅ | "4 total products / 1 out of stock" from real products; 0 errors |
 | Inventory | inventory-advanced | Render tabs | ✅ | Suppliers / Restock Orders tabs + empty states; 0 errors |
 | Inventory | inventory-advanced | Add supplier | ✅ | POST `/api/inventory/suppliers` → 200, D1 row (requires `name`,`contactPerson`,`email`,`phone`) |
+| Production | production | Render (overview/history tabs) | ✅ | "Today's Overview"/"Production History" tabs, empty state; 0 errors |
+| Production | manage-production-items | Create (modal, full UI) | ✅ | Add Item modal filled (name+category+case-size, all `required`) → `form.requestSubmit` → D1 `production_items` row (`Sweep UI Item`, case_size 36). Endpoint also 201. |
+| Production | manage-production-items | Render + list | ✅ | All 4 seeded items with Edit/Delete; "Total Items 4"; 0 errors |
+| Production | production-logs | Render + filters + CSV | ✅ | History view, "No logs found" empty state, Export CSV + filter controls; 0 errors. (Log rows are created by the shift→production-assignment workflow.) |
 
 ## Missing keys / external boundaries
 | Service | Env var(s) | Verified up to |

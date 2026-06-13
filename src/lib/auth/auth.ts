@@ -27,9 +27,14 @@ export async function getAuth() {
     user: {
       additionalFields: {
         role: { type: 'string', defaultValue: 'customer', input: false },
+        payRate: { type: 'number', required: false, input: false },
+        phone: { type: 'string', required: false },
       },
     },
-    plugins: [admin()],
+    // The admin plugin's own role default is "user", which overrides the
+    // schema-level "customer" default and is unknown to ROLE_RANK in guards.ts.
+    // Align it with the app's role model so new signups become "customer".
+    plugins: [admin({ defaultRole: 'customer', adminRoles: ['admin'] })],
   });
 }
 

@@ -10,8 +10,21 @@
 | T3 | Missing auth guards | all `api/**/route.ts` | ✅ No bug. Audit of all 36 routes: every employee/admin/write route already uses `requireRole`/`requireUser`. The 5 unguarded routes are intentionally public: `products`,`recipes` (GET-only catalog), `auth/[...all]` (Better Auth), `orders/create`,`payment/create-payment` (guest checkout → sub-project B). Auth layer survived migration intact. | n/a |
 | T4 | Role drift (`user` vs role model) | `lib/auth/auth.ts` | 🔧 `admin()` plugin defaulted new signups to `"user"` (rank −1, fails all guards). Set `admin({ defaultRole: 'customer', adminRoles: ['admin'] })`. Verified live: signup → `role:"customer"` in response + D1. Local data already clean (0 `user`/null rows). | dab7dc1 |
 | T5 | Type + test baseline | (whole `src`) | ✅ `npx tsc --noEmit` exits 0 (zero type errors); `npm test` → 5/5 pass (products, recipes suites). Migration left code type-clean; no fixes needed. | n/a |
+| T6 | **CRITICAL: server crash on every page** | `tailwind.config.ts` | 🔧 `plugins:[require('@tailwindcss/forms'),...]` threw `require is not defined` (config loads as ESM under Next 16/Node 25), crashing Tailwind's PostCSS step → **every CSS-rendering route 500'd**. Converted to ESM `import forms from ...`. Verified: all pages compile + render after fix. API-only routes (e.g. signup) were unaffected, which is why it hid until first page nav. | _pending_ |
 
 ## Phase 2 — Live sweep
+
+**Session baseline (T6):** Tailwind crash fixed → server stable on :3002. Logged
+in live as `admin@rtt.test` via the real login form (React handler fired,
+redirect to `/account`, 0 console errors). All 24 employee routes return 200 to
+admin (no auth redirect, no 404/500). `/dashboard` renders full content + live
+stats, 0 errors. Smoke-check folded into each domain below.
+
+_Dev-only note (not a code bug):_ on a cold server, the very first navigation can
+emit a transient "Invalid or unexpected token" while webpack is still compiling
+the chunk; the form briefly falls back to a native GET. Resolves on reload once
+compilation completes. Not reproducible on a warm server.
+
 | Domain | Page | Feature | Status | Evidence |
 |--------|------|---------|--------|----------|
 

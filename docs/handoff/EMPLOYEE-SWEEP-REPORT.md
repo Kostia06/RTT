@@ -66,11 +66,19 @@ button features (clock in/out) were driven fully through the UI.
 | Orders | orders | Status change | ✅ | UI status dropdown (pending→preparing) → PATCH `/api/orders/[id]` → D1 `status=preparing`; tab counts update |
 | Orders | reports | Render + live aggregation | ✅ | After marking order completed: TOTAL SALES $32.55, TOTAL ORDERS 1, COMPLETED 1, AVG $32.55 — all correct. Period tabs render. 0 errors |
 | Orders | dashboard | Render + stats | ✅ | (T6) "Welcome back, Admin Tester", live order/message stats, all tool sections; 0 errors |
+| Comms | messages | Render + list | ✅ | Seeded customer message shows; 0 errors |
+| Comms | messages | Mark read (open) | ✅ | Clicking opens detail + PATCH `/api/messages/[id]` → D1 `contact_messages.status` `new`→`read` |
+| Comms | messages | **Tab counts** | 🔧 | **Bug:** counts (All/New/Read/Archived) were derived from the per-filter fetch, so "All" showed only the active bucket and a message vanished once read. Fixed `MessagesSection` to fetch the full set + filter client-side (commit f442ad9). Verified: All (1)/Read (1) correct after read. |
+| Comms | messages | Newsletter broadcast | ✅🔑 | POST `/api/newsletter/broadcast` → 200, "sent to 1 subscribers" via **console-mode** email. Real send needs `RESEND_API_KEY`. |
+| Comms | support | Render + ticket filters | ✅ | "ALL (3)/OPEN (1)/IN PROGRESS (1)/RESOLVED (1)" with correct counts; 0 errors |
+| Comms | ai-assistant | Render + graceful failure | ✅🔑 | Chat UI renders; sending a message → endpoint returns structured 500 (no GCP creds), UI shows error bubble, no crash. Needs Google GenAI credentials for function. |
 
 ## Missing keys / external boundaries
 | Service | Env var(s) | Verified up to |
 |---------|-----------|----------------|
 | Image storage (Supabase, legacy) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | UI shows "unavailable" disabled state when unset; no upload path exercised |
+| Email (verification, order confirm, newsletter) | `RESEND_API_KEY` (+ `EMAIL_PROVIDER=resend`, `FROM_EMAIL`) | Console-mode logs full email payload; newsletter broadcast returns success; no real send |
+| AI assistant | Google GenAI credentials (`@google/genai` — `GOOGLE_API_KEY`/ADC) | Endpoint + chat UI exercised; returns structured 500 + UI error bubble without creds |
 
 ## Test data created
 | Table | Row id / name | Created by task |
@@ -83,6 +91,8 @@ button features (clock in/out) were driven fully through the UI.
 | fridges | (test fridges created + hard-deleted; back to 2 seeded) | Fridges domain |
 | production_items | (test items created + hard-deleted; back to 4 seeded) | Production domain |
 | orders | `98d4264c-…` RTT-20260612-2373, Sweep Customer, $32.55, status=completed (left in place as report/dashboard evidence) | Orders domain |
+| contact_messages | seeded `msg-welcome` toggled new→read→**reset to new** (seed preserved) | Comms domain |
+| newsletter_subscribers | 1 seeded subscriber received a console-mode broadcast (no row change) | Comms domain |
 
 ## Design issues deferred
 - 📋 **Image storage**: app was migrated off Supabase, but image upload still

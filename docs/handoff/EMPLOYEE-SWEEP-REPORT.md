@@ -27,6 +27,14 @@ compilation completes. Not reproducible on a warm server.
 
 | Domain | Page | Feature | Status | Evidence |
 |--------|------|---------|--------|----------|
+| Time | time-tracking | Render | ✅ | 0 console errors; full UI (status, week hours, QR, entries, schedule) |
+| Time | time-tracking | Clock in → out | ✅ | Live click; D1 `time_entries` row gets `clock_in` then `clock_out`+`total_hours`; UI toggles NOT CLOCKED IN ↔ CLOCKED IN |
+| Time | time-tracking | Manual entry | ✅ | `manualEntry` action → 200, `total_hours`=4.5 for 08:00–12:30 (correct calc) |
+| Time | time-tracking | Create shift | ✅ | POST `/api/employee/schedule` → 200, D1 `shifts` row (`scheduled`). Modal form fields verified in source (datetime-local ×2, position, notes, employee picker). |
+| Time | schedule | Render + list | ✅ | Shows created shift; stats "1 upcoming / 0 confirmed / 1 awaiting" correct; 0 errors |
+| Time | schedule | Confirm shift | ✅ | PATCH → D1 status `scheduled`→`confirmed`. Confirm button correctly gated `!isAdmin` (employee-only action; not a bug) |
+| Time | clock-in | Render (kiosk) | ✅ | Shows employee, CLOCKED OUT, Recent Entries reflects time_entries; 0 errors |
+| Time | today | Render + empty states | ✅ | "No shift today" (shift is Jun 16) + "No orders today" render correctly; 0 errors |
 
 ## Missing keys / external boundaries
 | Service | Env var(s) | Verified up to |
@@ -37,6 +45,8 @@ compilation completes. Not reproducible on a warm server.
 | Table | Row id / name | Created by task |
 |-------|---------------|-----------------|
 | user | sweep-roletest@rtt.test (`7xOaxZuyk1NcJXu5TnmwF8fMFhoXA1P9`, role=customer, unverified) | T4 |
+| time_entries | 2 rows: 1 clock-in/out cycle + 1 manual entry (4.5h, `sweep manual entry`), employee Admin Tester | Time domain |
+| shifts | `3eaf1522-…` Admin Tester, Jun 16 09:00–17:00, Kitchen Staff, status=confirmed | Time domain |
 
 ## Design issues deferred
 - 📋 **Image storage**: app was migrated off Supabase, but image upload still

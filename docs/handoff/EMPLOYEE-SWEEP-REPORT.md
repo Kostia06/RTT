@@ -61,6 +61,11 @@ button features (clock in/out) were driven fully through the UI.
 | Production | manage-production-items | Create (modal, full UI) | ✅ | Add Item modal filled (name+category+case-size, all `required`) → `form.requestSubmit` → D1 `production_items` row (`Sweep UI Item`, case_size 36). Endpoint also 201. |
 | Production | manage-production-items | Render + list | ✅ | All 4 seeded items with Edit/Delete; "Total Items 4"; 0 errors |
 | Production | production-logs | Render + filters + CSV | ✅ | History view, "No logs found" empty state, Export CSV + filter controls; 0 errors. (Log rows are created by the shift→production-assignment workflow.) |
+| Orders | orders | Render + status tabs | ✅ | ALL/PENDING/…/COMPLETED filter tabs; empty→1 after create; 0 errors |
+| Orders | orders | Create order | ✅ | POST `/api/orders/create` → 200, order RTT-20260612-2373 ($32.55) in D1 (also confirms customer-checkout endpoint for sub-project B) |
+| Orders | orders | Status change | ✅ | UI status dropdown (pending→preparing) → PATCH `/api/orders/[id]` → D1 `status=preparing`; tab counts update |
+| Orders | reports | Render + live aggregation | ✅ | After marking order completed: TOTAL SALES $32.55, TOTAL ORDERS 1, COMPLETED 1, AVG $32.55 — all correct. Period tabs render. 0 errors |
+| Orders | dashboard | Render + stats | ✅ | (T6) "Welcome back, Admin Tester", live order/message stats, all tool sections; 0 errors |
 
 ## Missing keys / external boundaries
 | Service | Env var(s) | Verified up to |
@@ -76,6 +81,8 @@ button features (clock in/out) were driven fully through the UI.
 | fridge_temperature_logs | 1 row: fr-main-walkin, 38.5°F, "sweep temp check", by admin | Fridges domain |
 | suppliers | `c3b159de-…` Sweep Supplier Co (Jane, jane@sweepsupplier.test) | Fridges domain |
 | fridges | (test fridges created + hard-deleted; back to 2 seeded) | Fridges domain |
+| production_items | (test items created + hard-deleted; back to 4 seeded) | Production domain |
+| orders | `98d4264c-…` RTT-20260612-2373, Sweep Customer, $32.55, status=completed (left in place as report/dashboard evidence) | Orders domain |
 
 ## Design issues deferred
 - 📋 **Image storage**: app was migrated off Supabase, but image upload still
@@ -89,3 +96,9 @@ button features (clock in/out) were driven fully through the UI.
   are public POST routes by design (guests can order). Sub-project B (Square)
   should add payment-intent verification + basic rate limiting so orders can't be
   forged without a real payment.
+- 📋 **Reports "Top Products" empty for inline-item orders**: `/api/orders/create`
+  stores line items as JSON on `orders.items`, but the reports Top Products widget
+  appears to read the normalized `order_items` table (not populated by that route).
+  Sales/orders/avg metrics are correct; only the Top Products breakdown stays empty.
+  Decide on one source of truth for order line items (normalize on create, or have
+  reports parse `orders.items`).

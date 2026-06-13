@@ -78,6 +78,9 @@ button features (clock in/out) were driven fully through the UI.
 | Content | manage-recipes/edit/[id] | Load | 🔧 | Same id-vs-slug bug for recipe `seed-r1`; fixed in same commit. Verified: edit loads "Classic Tonkotsu Ramen". |
 | Content | manage-recipes/create | Render + create | ✅ | Full form (basic/ingredients/instructions/images); POST `/api/recipes/create` → 200 (UUID recipe), DELETE → 200. Image upload shows the graceful "unavailable" state (T2 fix). |
 | Content | manage-content | Render + tabs | ✅ | Products (4)/Recipes (1) tabs, combined management; 0 errors |
+| Admin | admin/users | Render + stats | ✅ | 3 TOTAL / 1 ADMIN / 1 EMPLOYEE / **1 CUSTOMER** (T4 fix: sweep-roletest shows as customer) / 1 BANNED; 0 errors |
+| Admin | admin/users | Ban → Unban | ✅ | Completed prior session's pending unban: clicked Unban → PATCH → D1 `banned` 1→0; UI Banned stat 1→0, Unban→Ban. (Role change + pay-rate verified prior session.) |
+| Admin | admin/qr-codes | Render + regenerate | ✅ | Clock-in QR renders (Print/Download); POST `/api/admin/qr-codes` → 200 "regenerated successfully" with new QR image; 0 errors |
 
 ## Missing keys / external boundaries
 | Service | Env var(s) | Verified up to |

@@ -3,6 +3,35 @@
 **Started:** 2026-06-11 · **Branch:** feature/next-16-upgrade
 **Legend:** ✅ verified live · 🔧 fixed (commit) · 🔑 needs key/boundary · 📋 design issue (deferred)
 
+## Summary
+
+**Status: PASS.** All ~24 employee pages drive correctly against local D1.
+`npx tsc --noEmit` → 0 errors; `npm test` → 5/5 pass.
+
+**Bugs fixed (6 commits):**
+1. 🔴 **Tailwind config crash** — `require()` in `tailwind.config.ts` threw under
+   ESM, 500'ing **every** page. → ESM imports. (`966b31b`)
+2. 🔴 **Product/recipe edit broken** — `/api/products/[id]` & `/api/recipes/[id]`
+   used a UUID-shape heuristic that misrouted seeded ids to slug lookups; product
+   PUT/PATCH/DELETE also rejected non-UUID ids. Editing any seeded item failed
+   ("Failed to load product"). → match id OR slug, drop the UUID gate. (`a8afe9b`)
+3. 🟠 **Message tab counts** — counts derived from the per-filter fetch, so "All"
+   showed only the active bucket and a message vanished once read. → fetch full
+   set, filter client-side. (`f442ad9`)
+4. 🟠 **Role drift** — `admin()` plugin defaulted signups to `"user"` (rank −1,
+   fails all guards). → `defaultRole:'customer'`. (`dab7dc1`)
+5. 🟡 **Image upload** — degrades gracefully when Supabase storage unconfigured
+   instead of failing cryptically; removed orphan `lib/supabase/server.ts`. (`cb4dc5c`)
+
+**Verified working (live, D1-checked):** clock in/out + manual entry, shift
+create/confirm, fridge CRUD (+soft-delete) + temperature logging, supplier add,
+production-item CRUD, order create + status change, reports aggregation, message
+mark-read + newsletter broadcast, product/recipe create/edit/delete, user
+ban/unban + role + pay-rate, QR regenerate.
+
+**Needs keys for full function (🔑, all degrade gracefully):** image storage
+(Supabase/R2), email (Resend — currently console-mode), AI assistant (Google GenAI).
+
 ## Phase 1 — Static audit
 | # | Bug class | Files | Outcome | Commit |
 |---|-----------|-------|---------|--------|

@@ -72,6 +72,12 @@ button features (clock in/out) were driven fully through the UI.
 | Comms | messages | Newsletter broadcast | ✅🔑 | POST `/api/newsletter/broadcast` → 200, "sent to 1 subscribers" via **console-mode** email. Real send needs `RESEND_API_KEY`. |
 | Comms | support | Render + ticket filters | ✅ | "ALL (3)/OPEN (1)/IN PROGRESS (1)/RESOLVED (1)" with correct counts; 0 errors |
 | Comms | ai-assistant | Render + graceful failure | ✅🔑 | Chat UI renders; sending a message → endpoint returns structured 500 (no GCP creds), UI shows error bubble, no crash. Needs Google GenAI credentials for function. |
+| Content | manage-products | Render + list/stats | ✅ | 4 products, stats (4 Total/4 Active/3 Featured), filter tabs; 0 errors |
+| Content | manage-products/edit/[id] | **Load + Save** | 🔧 | **Bug:** edit page alerted "Failed to load product" for every seeded product. `/api/products/[id]` used a UUID-shape heuristic that misrouted non-UUID ids (`prod-tonkotsu-kit`) to a slug lookup; PUT/PATCH/DELETE outright rejected non-UUID ids ("Invalid product ID"). Fixed: match id OR slug, drop the UUID gate (commit a8afe9b). Verified: edit loads, name PUT → D1, reverted. |
+| Content | manage-recipes | Render + list | ✅ | 1 recipe + stats; 0 errors |
+| Content | manage-recipes/edit/[id] | Load | 🔧 | Same id-vs-slug bug for recipe `seed-r1`; fixed in same commit. Verified: edit loads "Classic Tonkotsu Ramen". |
+| Content | manage-recipes/create | Render + create | ✅ | Full form (basic/ingredients/instructions/images); POST `/api/recipes/create` → 200 (UUID recipe), DELETE → 200. Image upload shows the graceful "unavailable" state (T2 fix). |
+| Content | manage-content | Render + tabs | ✅ | Products (4)/Recipes (1) tabs, combined management; 0 errors |
 
 ## Missing keys / external boundaries
 | Service | Env var(s) | Verified up to |
@@ -93,6 +99,8 @@ button features (clock in/out) were driven fully through the UI.
 | orders | `98d4264c-…` RTT-20260612-2373, Sweep Customer, $32.55, status=completed (left in place as report/dashboard evidence) | Orders domain |
 | contact_messages | seeded `msg-welcome` toggled new→read→**reset to new** (seed preserved) | Comms domain |
 | newsletter_subscribers | 1 seeded subscriber received a console-mode broadcast (no row change) | Comms domain |
+| products | `prod-tonkotsu-kit` name edited→reverted (PUT test) | Content domain |
+| recipes | test recipe created + hard-deleted; back to 1 seeded | Content domain |
 
 ## Design issues deferred
 - 📋 **Image storage**: app was migrated off Supabase, but image upload still

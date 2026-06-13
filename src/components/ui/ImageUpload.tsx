@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/supabase/config';
 import Image from 'next/image';
 
 interface ImageUploadProps {
@@ -28,6 +29,12 @@ export default function ImageUpload({
     try {
       setUploading(true);
       setError(null);
+
+      if (!isSupabaseConfigured) {
+        throw new Error(
+          'Image upload is unavailable: storage is not configured on this environment.'
+        );
+      }
 
       // Validate file size
       if (file.size > maxSizeMB * 1024 * 1024) {
@@ -148,6 +155,26 @@ export default function ImageUpload({
               </button>
             </div>
           </div>
+        </div>
+      ) : !isSupabaseConfigured ? (
+        <div className="relative flex h-64 w-full flex-col items-center justify-center border-2 border-dashed border-gray-200 bg-gray-50 px-4 text-center">
+          <svg
+            className="mb-3 h-10 w-10 text-gray-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 3l18 18M9.88 9.88A3 3 0 0014.12 14.12M21 15l-5-5M3 16V8a2 2 0 012-2h2m4 0h8a2 2 0 012 2v8"
+            />
+          </svg>
+          <p className="mb-1 text-sm font-medium text-gray-600">Image upload unavailable</p>
+          <p className="text-xs text-gray-400">
+            Storage is not configured on this environment.
+          </p>
         </div>
       ) : (
         <div

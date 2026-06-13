@@ -6,7 +6,8 @@
 ## Phase 1 — Static audit
 | # | Bug class | Files | Outcome | Commit |
 |---|-----------|-------|---------|--------|
-| T2 | Supabase leftovers | `ImageUpload.tsx`, `lib/supabase/server.ts` | 🔧 ImageUpload degrades when storage unconfigured (disabled state + URL-paste hint); deleted orphan `server.ts` (0 importers); kept `client.ts`/`config.ts` (still imported) | _pending_ |
+| T2 | Supabase leftovers | `ImageUpload.tsx`, `lib/supabase/server.ts` | 🔧 ImageUpload degrades when storage unconfigured (disabled state); deleted orphan `server.ts` (0 importers); kept `client.ts`/`config.ts` (still imported) | cb4dc5c |
+| T3 | Missing auth guards | all `api/**/route.ts` | ✅ No bug. Audit of all 36 routes: every employee/admin/write route already uses `requireRole`/`requireUser`. The 5 unguarded routes are intentionally public: `products`,`recipes` (GET-only catalog), `auth/[...all]` (Better Auth), `orders/create`,`payment/create-payment` (guest checkout → sub-project B). Auth layer survived migration intact. | n/a |
 
 ## Phase 2 — Live sweep
 | Domain | Page | Feature | Status | Evidence |
@@ -26,3 +27,7 @@
   targets Supabase Storage. Needs an R2 (or equivalent) upload route + signed
   URLs to fully restore. Until then, manage-products/recipes can set image URLs
   by pasting, not uploading. (Feeds a future sub-project.)
+- 📋 **Guest-checkout abuse surface**: `orders/create` and `payment/create-payment`
+  are public POST routes by design (guests can order). Sub-project B (Square)
+  should add payment-intent verification + basic rate limiting so orders can't be
+  forged without a real payment.

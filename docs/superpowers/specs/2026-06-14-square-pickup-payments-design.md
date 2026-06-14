@@ -23,8 +23,9 @@ without ever contacting Square. The server side is already built and correct:
   `pickup_date`, `pickup_time`, and delivery columns.
 - `POST /api/orders` creates an order (+order_items), validates that pickup orders
   have `pickupDate`/`pickupTime`, returns `201 { order: { id, orderNumber, ... } }`.
-- `PATCH /api/orders/[id]` currently updates `status` and `paymentStatus` only —
-  **it does not persist `payment_id`** (the one server gap to close).
+- `PATCH /api/orders/[id]` is guarded by `requireRole('employee')` and updates
+  `status`/`paymentStatus` — usable by staff, **not** by a customer browser, so the
+  paid-confirmation is done server-side inside `create-payment` instead.
 
 ## Goal
 
@@ -47,21 +48,32 @@ Apple/Google Pay, tipping. All viable follow-ups.
 
 ## Architecture & data flow
 
-### Card path (order-first)
+### Card path (order-first; server confirms)
 1. Customer completes the Information step (contact + pickup date/time) and the
    Payment step with `paymentMethod='online'`.
 2. `POST /api/orders` with the order payload (items, totals, `deliveryType='pickup'`,
    `pickupDate`, `pickupTime`, `paymentMethod='online'`) → order created
    `status='pending'`, `payment_status='pending'`; response gives `{ id, orderNumber }`.
 3. `SquareCard.tokenize()` → `sourceId` (card data never touches our server).
-4. `POST /api/payment/create-payment { sourceId, amount: total, orderId: id,
-   customerEmail }` → Square charge.
-5. Success → `PATCH /api/orders/[id] { status:'confirmed', paymentStatus:'paid',
-   paymentId: payment.id }` → `clearCart()` → redirect to
+4. `POST /api/payment/create-payment { sourceId, orderId, customerEmail }` →
+   the route loads the order, charges its server-side `total` via Square, and on
+   success **updates the order itself** (`payment_status='paid'`,
+   `payment_id=<square id>`, `status='confirmed'`) before returning
+   `{ payment: { id, receiptUrl }, orderNumber }`.
+5. Success → `clearCart()` → redirect to
    `/checkout/success?order=<orderNumber>&receipt=<receiptUrl>`.
 6. Failure (tokenize error / decline / Square error) → show the error inline; the
    order stays `pending`; the customer retries from the Payment step without
    re-entering pickup info.
+
+**Why the server confirms (not the client):** the order-update route
+(`updateOrder` in `api/orders/[id]`) is guarded by `requireRole('employee')`, so a
+customer browser cannot PATCH it. Confirming inside `create-payment` (a) avoids
+that auth wall, (b) makes "paid" provable — an order can only be marked paid by the
+same server action that charged Square, and (c) lets the charge amount come from
+the stored order `total` instead of a client-supplied number (closes the
+amount-tampering hole for paid orders). `api/orders/[id]` is therefore **not**
+modified by this work.
 
 ### Pay-at-pickup path
 - Step 2 only: `POST /api/orders` with `paymentMethod='in-store'` → order
@@ -95,10 +107,15 @@ Client component. Responsibilities:
   not pass credentials); the parent only calls `squareCardRef.tokenize()` and
   reads the ready/unavailable callback.
 
-### Edit: `src/app/api/orders/[id]/route.ts`
-- Extend the update to accept `paymentId` and persist it to `payment_id`
-  (alongside the existing `status`/`paymentStatus`). One added field; no behavior
-  change otherwise.
+### Edit: `src/app/api/payment/create-payment/route.ts`
+- Accept `{ sourceId, orderId, customerEmail }` (drop reliance on client `amount`).
+- Load the order by `orderId`; if missing → 404. Use `order.total` as the charge
+  amount (server-derived). Keep the existing `createPayment` call + error handling.
+- On success, update that order: `payment_status='paid'`, `payment_id=<square
+  payment id>`, `status='confirmed'`, `updated_at=now`. Return `{ success, payment:
+  { id, status, receiptUrl }, orderNumber: order.order_number }`.
+- Keep working for the legacy `{ sourceId, amount }` shape only if trivial;
+  otherwise require `orderId` (the only caller is our checkout).
 
 ### New: `src/app/api/payment/config/route.ts`
 - `GET` → `{ applicationId: SQUARE_APPLICATION_ID, locationId: SQUARE_LOCATION_ID,
@@ -129,9 +146,10 @@ NEXT_PUBLIC_SQUARE_APPLICATION_ID=  # sandbox application id (client)
 - **Charge declined / Square error:** the route returns `{ error, details }`;
   surface the human-readable detail; order stays `pending` for retry.
 - **Order-creation failure before charge:** no charge happens; show error.
-- **Confirm (PATCH) failure after a successful charge:** rare; the payment id +
-  receipt are in hand. Show success with a note and log the order id + payment id
-  so staff can reconcile. (No auto-refund in scope.)
+- **Order-update failure after a successful charge** (inside `create-payment`,
+  rare): the charge succeeded, so still return success to the customer with the
+  payment id + receipt, and `console.error` the order id + payment id so staff can
+  reconcile manually. (No auto-refund in scope.)
 
 ## Testing / verification
 

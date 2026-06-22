@@ -56,7 +56,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const fetchPickupDates = async () => {
       try {
-        const response = await fetch('/api/employee/schedule');
+        const response = await fetch('/api/pickup-availability');
         if (response.ok) {
           const data = await response.json();
           const shifts: Shift[] = data.shifts || [];

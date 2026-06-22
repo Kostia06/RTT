@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/components/providers/CartProvider';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Button, Input } from '@/components/ui';
+import { SquareCard, type SquareCardHandle } from '@/components/checkout/SquareCard';
 
 type CheckoutStep = 'information' | 'payment';
 
@@ -33,6 +34,9 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<CheckoutStep>('information');
   const [isProcessing, setIsProcessing] = useState(false);
   const [availablePickupDates, setAvailablePickupDates] = useState<PickupDateInfo[]>([]);
+  const squareRef = useRef<SquareCardHandle>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [cardStatus, setCardStatus] = useState<'loading' | 'ready' | 'unavailable'>('loading');
 
   const [formData, setFormData] = useState({
     email: user?.email || '',
@@ -110,89 +114,125 @@ export default function CheckoutPage() {
   const handleSubmitInformation = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.paymentMethod === 'in-store') {
-      // Skip payment step and complete the order
-      handleCompleteOrder();
+      handlePayAtPickup();
     } else {
       setStep('payment');
     }
   };
 
-  const handleCompleteOrder = async () => {
+  // Creates the order in D1 and returns { id, orderNumber }. Orders are created
+  // `pending`; online orders become `paid/confirmed` only after Square charges.
+  const createOrder = async (): Promise<{ id: string; orderNumber: string }> => {
+    const selectedDateInfo = availablePickupDates.find((d) => d.date === formData.pickupDate);
+    const pickupTimeRange = selectedDateInfo
+      ? `${selectedDateInfo.earliestTime} - ${selectedDateInfo.latestTime}`
+      : '';
+
+    const orderItems = state.items.map((item) => ({
+      name: item.productName,
+      quantity: item.quantity,
+      price: item.price,
+    }));
+
+    // Public customer endpoint (no employee auth). It generates the order number,
+    // persists pickup info, and returns { order: { id, orderNumber } }. We pass no
+    // paymentId, so the order is created `pending` until Square confirms it.
+    const orderData = {
+      customerName: `${formData.firstName} ${formData.lastName}`,
+      customerEmail: formData.email,
+      customerPhone: formData.phone,
+      items: orderItems,
+      subtotal,
+      tax,
+      total,
+      paymentMethod: formData.paymentMethod,
+      deliveryType: 'pickup',
+      deliveryMethod: 'pickup',
+      pickupDate: formData.pickupDate,
+      pickupTime: pickupTimeRange,
+      deliveryTimeSlot: pickupTimeRange
+        ? `${formData.pickupDate} (${pickupTimeRange})`
+        : formData.pickupDate,
+    };
+
+    const response = await fetch('/api/orders/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to create order');
+    }
+    const data = await response.json();
+    const order = data.order ?? data;
+    return { id: order.id, orderNumber: order.orderNumber ?? order.order_number };
+  };
+
+  // Pay-at-pickup: just create the pending order and go to success.
+  const handlePayAtPickup = async () => {
     setIsProcessing(true);
-
+    setPaymentError(null);
     try {
-      // Generate order number
-      const orderNumber = `ORD-${Date.now().toString().slice(-8)}`;
-
-      // Get pickup time range (only for pickup orders)
-      const selectedDateInfo = availablePickupDates.find(d => d.date === formData.pickupDate);
-      const pickupTimeRange = selectedDateInfo
-        ? `${selectedDateInfo.earliestTime} - ${selectedDateInfo.latestTime}`
-        : '';
-
-      // Prepare order items
-      const orderItems = state.items.map(item => ({
-        name: item.productName,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-
-      // Prepare order data
-      const orderData: any = {
-        orderNumber,
-        customerName: `${formData.firstName} ${formData.lastName}`,
-        customerEmail: formData.email,
-        customerPhone: formData.phone,
-        total: total,
-        status: 'pending',
-        items: orderItems,
-        paymentMethod: formData.paymentMethod,
-        paymentStatus: formData.paymentMethod === 'online' ? 'paid' : 'pending',
-        deliveryType: formData.deliveryType,
-      };
-
-      // Add pickup or delivery specific fields
-      if (formData.deliveryType === 'pickup') {
-        orderData.pickupDate = formData.pickupDate;
-        orderData.pickupTime = pickupTimeRange;
-      } else {
-        orderData.deliveryAddress = formData.deliveryAddress;
-        orderData.deliveryCity = formData.deliveryCity;
-        orderData.deliveryPostalCode = formData.deliveryPostalCode;
-        orderData.deliveryInstructions = formData.deliveryInstructions;
-      }
-
-      // Create order
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create order');
-      }
-
-      // Clear cart and redirect to success page
+      const { orderNumber } = await createOrder();
       clearCart();
-      router.push('/checkout/success');
+      router.push(`/checkout/success?order=${encodeURIComponent(orderNumber)}`);
     } catch (error) {
       console.error('Error creating order:', error);
-      alert('Failed to create order. Please try again.');
+      setPaymentError(error instanceof Error ? error.message : 'Failed to create order.');
       setIsProcessing(false);
     }
   };
 
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessing(true);
+    setPaymentError(null);
 
-    // Simulate payment processing - replace with Square integration
-    setTimeout(async () => {
-      await handleCompleteOrder();
-    }, 2000);
+    if (cardStatus !== 'ready') {
+      setPaymentError('The card form is not ready yet. Please wait a moment.');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // 1) create the pending order
+      const { id, orderNumber } = await createOrder();
+
+      // 2) tokenize the card
+      const tokenResult = await squareRef.current!.tokenize();
+      if (!tokenResult.token) {
+        setPaymentError(tokenResult.error || 'Card was not accepted.');
+        setIsProcessing(false);
+        return; // order stays pending; customer can retry
+      }
+
+      // 3) charge + server-side confirm
+      const payRes = await fetch('/api/payment/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId: tokenResult.token, orderId: id, customerEmail: formData.email }),
+      });
+      const payData = await payRes.json();
+      if (!payRes.ok) {
+        const detail = payData.details?.[0]?.detail || payData.error || 'Payment failed.';
+        setPaymentError(detail);
+        setIsProcessing(false);
+        return;
+      }
+
+      // 4) done
+      clearCart();
+      const receipt = payData.payment?.receiptUrl
+        ? `&receipt=${encodeURIComponent(payData.payment.receiptUrl)}`
+        : '';
+      router.push(
+        `/checkout/success?order=${encodeURIComponent(payData.orderNumber || orderNumber)}${receipt}`
+      );
+    } catch (error) {
+      console.error('Payment error:', error);
+      setPaymentError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   if (state.items.length === 0) {
@@ -279,154 +319,46 @@ export default function CheckoutPage() {
                       required
                     />
 
-                    <h3 className="text-lg font-bold mt-8 mb-4">Order Type</h3>
+                    <h3 className="text-lg font-bold mt-8 mb-4">Pickup Details</h3>
 
-                    <div className="space-y-3 mb-6">
-                      <label className={`flex items-center justify-between p-4 border-2 cursor-pointer transition-colors ${
-                        formData.deliveryType === 'pickup'
-                          ? 'border-black bg-gray-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="deliveryType"
-                            value="pickup"
-                            checked={formData.deliveryType === 'pickup'}
-                            onChange={handleInputChange}
-                            className="w-4 h-4"
-                          />
-                          <div>
-                            <span className="font-bold">Pickup</span>
-                            <p className="text-sm text-gray-500">Pick up your order at our location</p>
-                          </div>
-                        </div>
-                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                      </label>
-
-                      <label className={`flex items-center justify-between p-4 border-2 cursor-pointer transition-colors ${
-                        formData.deliveryType === 'delivery'
-                          ? 'border-black bg-gray-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="deliveryType"
-                            value="delivery"
-                            checked={formData.deliveryType === 'delivery'}
-                            onChange={handleInputChange}
-                            className="w-4 h-4"
-                          />
-                          <div>
-                            <span className="font-bold">Local Delivery</span>
-                            <p className="text-sm text-gray-500">We&apos;ll deliver to your address</p>
-                          </div>
-                        </div>
-                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                        </svg>
-                      </label>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-4">
+                      <p className="text-sm text-blue-900">
+                        Select a date when our staff will be available.
+                      </p>
                     </div>
 
-                    {formData.deliveryType === 'pickup' ? (
-                      <>
-                        <h3 className="text-lg font-bold mb-4">Pickup Details</h3>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Pickup Date *
+                      </label>
+                      <select
+                        name="pickupDate"
+                        value={formData.pickupDate}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
+                        required
+                      >
+                        <option value="">Select a date</option>
+                        {availablePickupDates.map(dateInfo => (
+                          <option key={dateInfo.date} value={dateInfo.date}>
+                            {new Date(dateInfo.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-4">
-                          <p className="text-sm text-blue-900">
-                            Select a date when our staff will be available.
-                          </p>
+                    {formData.pickupDate && (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded mt-4">
+                        <div className="flex items-center gap-2 mb-1">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-sm font-bold text-green-900">Pickup Time Window</span>
                         </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Pickup Date *
-                          </label>
-                          <select
-                            name="pickupDate"
-                            value={formData.pickupDate}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
-                            required
-                          >
-                            <option value="">Select a date</option>
-                            {availablePickupDates.map(dateInfo => (
-                              <option key={dateInfo.date} value={dateInfo.date}>
-                                {new Date(dateInfo.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {formData.pickupDate && (
-                          <div className="p-4 bg-green-50 border border-green-200 rounded mt-4">
-                            <div className="flex items-center gap-2 mb-1">
-                              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span className="text-sm font-bold text-green-900">Pickup Time Window</span>
-                            </div>
-                            <p className="text-sm text-green-800 ml-7">
-                              {availablePickupDates.find(d => d.date === formData.pickupDate)?.earliestTime} - {availablePickupDates.find(d => d.date === formData.pickupDate)?.latestTime}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <h3 className="text-lg font-bold mb-4">Delivery Address</h3>
-
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded mb-4">
-                          <p className="text-sm text-blue-900">
-                            We deliver locally. Please provide your delivery address.
-                          </p>
-                        </div>
-
-                        <div className="space-y-4">
-                          <Input
-                            label="Street Address"
-                            name="deliveryAddress"
-                            value={formData.deliveryAddress}
-                            onChange={handleInputChange}
-                            required={formData.deliveryType === 'delivery'}
-                          />
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <Input
-                              label="City"
-                              name="deliveryCity"
-                              value={formData.deliveryCity}
-                              onChange={handleInputChange}
-                              required={formData.deliveryType === 'delivery'}
-                            />
-                            <Input
-                              label="Postal Code"
-                              name="deliveryPostalCode"
-                              value={formData.deliveryPostalCode}
-                              onChange={handleInputChange}
-                              placeholder="A1A 1A1"
-                              required={formData.deliveryType === 'delivery'}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Delivery Instructions (Optional)
-                            </label>
-                            <textarea
-                              name="deliveryInstructions"
-                              value={formData.deliveryInstructions}
-                              onChange={handleInputChange}
-                              className="w-full px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black"
-                              rows={3}
-                              placeholder="e.g., Leave at front door, ring doorbell"
-                            />
-                          </div>
-                        </div>
-                      </>
+                        <p className="text-sm text-green-800 ml-7">
+                          {availablePickupDates.find(d => d.date === formData.pickupDate)?.earliestTime} - {availablePickupDates.find(d => d.date === formData.pickupDate)?.latestTime}
+                        </p>
+                      </div>
                     )}
 
                     <h3 className="text-lg font-bold mt-8 mb-4">Payment Method</h3>
@@ -485,6 +417,10 @@ export default function CheckoutPage() {
                   <Button type="submit" variant="primary" size="lg" className="w-full mt-8" disabled={isProcessing}>
                     {isProcessing ? 'PROCESSING...' : formData.paymentMethod === 'in-store' ? 'COMPLETE ORDER' : 'CONTINUE TO PAYMENT'}
                   </Button>
+
+                  {paymentError && step === 'information' && (
+                    <p className="mt-4 text-sm text-red-600">{paymentError}</p>
+                  )}
                 </form>
               )}
 
@@ -501,47 +437,20 @@ export default function CheckoutPage() {
 
                   <h2 className="text-xl font-bold mb-6">Payment</h2>
 
-                  <div className="bg-yellow-50 border border-yellow-200 p-4 mb-6 text-sm">
-                    <p className="font-medium text-yellow-800">Sandbox Mode</p>
-                    <p className="text-yellow-700">
-                      This is a demo. No real payment will be processed.
-                      Use test card: 4111 1111 1111 1111
-                    </p>
-                  </div>
+                  <SquareCard ref={squareRef} onStatusChange={setCardStatus} />
 
-                  <div className="space-y-4">
-                    <Input
-                      label="Card Number"
-                      placeholder="4111 1111 1111 1111"
-                      required
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        label="Expiry Date"
-                        placeholder="MM/YY"
-                        required
-                      />
-                      <Input
-                        label="CVV"
-                        placeholder="123"
-                        required
-                      />
-                    </div>
-                    <Input
-                      label="Name on Card"
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
+                  {paymentError && (
+                    <p className="mt-4 text-sm text-red-600">{paymentError}</p>
+                  )}
 
                   <Button
                     type="submit"
                     variant="primary"
                     size="lg"
                     className="w-full mt-8"
-                    disabled={isProcessing}
+                    disabled={isProcessing || cardStatus !== 'ready'}
                   >
-                    {isProcessing ? 'PROCESSING...' : `PAY $${total.toFixed(2)}`}
+                    {isProcessing ? 'PROCESSING…' : `PAY $${total.toFixed(2)}`}
                   </Button>
                 </form>
               )}

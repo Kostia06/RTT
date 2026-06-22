@@ -33,12 +33,6 @@ export const NoodleHero: React.FC = () => {
         '-=1'
       )
       .fromTo(
-        '.hero-char',
-        { y: 120, opacity: 0, rotateX: -80 },
-        { y: 0, opacity: 1, rotateX: 0, duration: 1.2, stagger: 0.03 },
-        '-=0.8'
-      )
-      .fromTo(
         '.hero-subtitle',
         { y: 40, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.8 },
@@ -105,6 +99,22 @@ export const NoodleHero: React.FC = () => {
         ease: 'sine.inOut'
       });
 
+      // Gentle centered rotation — the stamp sways from center-left to
+      // center-right, pivoting on its own center (transform-origin: center).
+      // Kept slow + shallow so the fine concentric lines don't shimmer/alias.
+      gsap.fromTo(
+        '.hero-logo-mark',
+        { rotation: -4 },
+        {
+          rotation: 4,
+          transformOrigin: 'center center',
+          duration: 11,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut'
+        }
+      );
+
       // Parallax on scroll
       ScrollTrigger.create({
         trigger: containerRef.current,
@@ -143,12 +153,10 @@ export const NoodleHero: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
-  const titleChars = 'RESPECT THE TECHNIQUE'.split('');
-
   return (
     <div
       ref={containerRef}
-      className="relative min-h-[100svh] bg-white overflow-hidden flex items-center justify-center"
+      className="relative min-h-[100svh] bg-white overflow-hidden flex flex-col items-center justify-center gap-6 sm:gap-10"
     >
       {/* Animated overlay reveal */}
       <div className="hero-overlay absolute inset-0 bg-white z-20" />
@@ -171,21 +179,16 @@ export const NoodleHero: React.FC = () => {
         ))}
       </div>
 
-      {/* Large animated logo in background */}
-      <div className="hero-logo-bg absolute inset-0 flex items-center justify-center">
-        <div
-          className="relative w-[70vw] h-[70vw] max-w-[500px] max-h-[500px]"
-          style={{
-            backgroundColor: '#1e2a4a',
-            WebkitMaskImage: 'url(/images/logo.png)',
-            maskImage: 'url(/images/logo.png)',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center',
-            maskPosition: 'center',
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-          }}
+      {/* Solid blue logo — the hero centerpiece (its ring already reads "Respect the Technique").
+          Vector SVG (traced from the artwork, recolored to navy) so it stays perfectly crisp at
+          any size — no raster pixelation or mask aliasing. */}
+      <div className="hero-logo-bg relative z-0 flex justify-center">
+        <img
+          src="/images/logo.svg"
+          alt="Respect the Technique"
+          draggable={false}
+          className="hero-logo-mark relative w-[60vw] h-[60vw] max-w-[440px] max-h-[440px] object-contain select-none pointer-events-none"
+          style={{ transformOrigin: 'center center' }}
         />
       </div>
 
@@ -197,35 +200,8 @@ export const NoodleHero: React.FC = () => {
         <div className="hero-line h-full bg-gradient-to-r from-transparent via-black/20 to-transparent" />
       </div>
 
-      {/* Main content */}
+      {/* Main content \u2014 sits below the logo so it never overlaps */}
       <div className="hero-content relative z-10 text-center px-3 sm:px-6 max-w-6xl mx-auto w-full">
-
-        {/* Main title with character animation */}
-        <h1 className="text-[11vw] sm:text-[9vw] md:text-[7vw] lg:text-[6vw] font-black leading-[0.95] tracking-[-0.03em] text-black mb-4 sm:mb-8"
-          style={{ perspective: '1000px' }}
-        >
-          <span className="block overflow-visible py-1">
-            {titleChars.slice(0, 7).map((char, i) => (
-              <span key={i} className="hero-char inline-block will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
-                {char === ' ' ? '\u00A0' : char}
-              </span>
-            ))}
-          </span>
-          <span className="block overflow-visible py-1">
-            {titleChars.slice(8, 11).map((char, i) => (
-              <span key={i} className="hero-char inline-block text-outline will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
-                {char === ' ' ? '\u00A0' : char}
-              </span>
-            ))}
-          </span>
-          <span className="block overflow-visible py-1">
-            {titleChars.slice(12).map((char, i) => (
-              <span key={i} className="hero-char inline-block will-change-transform" style={{ transformStyle: 'preserve-3d' }}>
-                {char === ' ' ? '\u00A0' : char}
-              </span>
-            ))}
-          </span>
-        </h1>
 
         {/* Subtitle */}
         <p className="hero-subtitle text-sm sm:text-base md:text-lg lg:text-xl text-black/70 max-w-md mx-auto mb-6 sm:mb-10 font-light tracking-wide px-2">
@@ -283,15 +259,6 @@ export const NoodleHero: React.FC = () => {
       </div>
 
       <style jsx>{`
-        .text-outline {
-          -webkit-text-stroke: 1px black;
-          color: transparent;
-        }
-        @media (min-width: 640px) {
-          .text-outline {
-            -webkit-text-stroke: 1.5px black;
-          }
-        }
         @keyframes scroll-line {
           0% { transform: translateY(-100%); }
           100% { transform: translateY(200%); }

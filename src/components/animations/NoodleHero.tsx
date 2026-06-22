@@ -99,14 +99,14 @@ export const NoodleHero: React.FC = () => {
         ease: 'sine.inOut'
       });
 
-      // Gentle centered rotation — the stamp sways from center-left to
-      // center-right, pivoting on its own center (transform-origin: center).
-      // Kept slow + shallow so the fine concentric lines don't shimmer/alias.
+      // Base orientation rotated 90° counter-clockwise (-90°), with a gentle
+      // centered sway (±4°) pivoting on its own center. Slow + shallow so the
+      // fine concentric lines don't shimmer/alias.
       gsap.fromTo(
         '.hero-logo-mark',
-        { rotation: -4 },
+        { rotation: -94 },
         {
-          rotation: 4,
+          rotation: -86,
           transformOrigin: 'center center',
           duration: 11,
           repeat: -1,

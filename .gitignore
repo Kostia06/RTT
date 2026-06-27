@@ -52,3 +52,11 @@ next-env.d.ts
 # stray caches
 node-compile-cache/
 pnpm-lock.yaml
+
+# local dev artifacts / tooling caches
+.playwright-mcp/
+/*.png
+/tsx-501/
+/update-check/
+/v8-compile-cache-501/
+/open-next-tmp*/

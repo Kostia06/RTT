@@ -1,144 +1,103 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db/client';
+import { user } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
+
+const VALID_ROLES = ['customer', 'employee', 'manager', 'admin'] as const;
+
+/** Parse a ban duration into an expiry Date. 'permanent' -> far-future (100y). */
+function resolveBanExpires(duration: string | undefined): Date {
+  const now = new Date();
+  switch (duration) {
+    case 'hour':
+      now.setHours(now.getHours() + 1);
+      return now;
+    case 'day':
+    case '1d':
+      now.setDate(now.getDate() + 1);
+      return now;
+    case 'week':
+    case '7d':
+      now.setDate(now.getDate() + 7);
+      return now;
+    case 'permanent':
+    default:
+      now.setFullYear(now.getFullYear() + 100);
+      return now;
+  }
+}
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
+    const { user: currentUser } = gate;
+
     const { id } = await params;
     const body = await request.json();
-    const { role, ban, unban } = body;
+    const { role, ban, unban } = body as {
+      role?: string;
+      ban?: { duration?: string; reason?: string } | null;
+      unban?: boolean;
+    };
 
-    const supabase = await createClient();
+    const isRoleChange = typeof role === 'string';
+    const isBanChange = ban !== undefined && ban !== null;
+    const isUnbanChange = unban === true || ban === null;
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
+    // Self-protection: an admin cannot change their own role or ban themselves.
+    if (id === currentUser.id && (isRoleChange || isBanChange || isUnbanChange)) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user is admin
-    const userRole = user.user_metadata?.role;
-    if (userRole !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 403 }
-      );
-    }
-
-    // Prevent self-modification
-    if (user.id === id) {
-      return NextResponse.json(
-        { error: 'Cannot modify your own account' },
+        { error: 'You cannot modify your own account' },
         { status: 400 }
       );
     }
 
-    const serviceSupabase = await createServiceClient();
+    const db = await getDb();
 
-    // Update role if provided
-    if (role) {
-      if (!['customer', 'employee', 'admin'].includes(role)) {
-        return NextResponse.json(
-          { error: 'Invalid role' },
-          { status: 400 }
-        );
-      }
-
-      // Get target user
-      const { data: { user: targetUser }, error: getUserError } =
-        await serviceSupabase.auth.admin.getUserById(id);
-
-      if (getUserError || !targetUser) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
-
-      // Update user metadata
-      const { error: updateError } = await serviceSupabase.auth.admin.updateUserById(
-        id,
-        {
-          user_metadata: {
-            ...targetUser.user_metadata,
-            role: role,
-          },
-        }
-      );
-
-      if (updateError) {
-        console.error('Error updating user role:', updateError);
-        return NextResponse.json(
-          { error: 'Failed to update role' },
-          { status: 500 }
-        );
-      }
+    // Ensure the target exists.
+    const [target] = await db.select().from(user).where(eq(user.id, id)).limit(1);
+    if (!target) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Ban user if requested
-    if (ban) {
-      const banDuration = ban.duration || 'permanent'; // 'hour', 'day', 'week', 'permanent'
-      let banUntil: string | undefined;
-
-      if (banDuration !== 'permanent') {
-        const now = new Date();
-        switch (banDuration) {
-          case 'hour':
-            now.setHours(now.getHours() + 1);
-            break;
-          case 'day':
-            now.setDate(now.getDate() + 1);
-            break;
-          case 'week':
-            now.setDate(now.getDate() + 7);
-            break;
-        }
-        banUntil = now.toISOString();
-      } else {
-        // Set to 100 years from now for "permanent"
-        const farFuture = new Date();
-        farFuture.setFullYear(farFuture.getFullYear() + 100);
-        banUntil = farFuture.toISOString();
+    // Role update.
+    if (isRoleChange) {
+      if (!VALID_ROLES.includes(role as (typeof VALID_ROLES)[number])) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
       }
-
-      const { error: banError } = await serviceSupabase.auth.admin.updateUserById(
-        id,
-        {
-          ban_duration: banUntil,
-        }
-      );
-
-      if (banError) {
-        console.error('Error banning user:', banError);
-        return NextResponse.json(
-          { error: 'Failed to ban user' },
-          { status: 500 }
-        );
-      }
+      await db
+        .update(user)
+        .set({ role, updatedAt: new Date() })
+        .where(eq(user.id, id));
     }
 
-    // Unban user if requested
-    if (unban) {
-      const { error: unbanError } = await serviceSupabase.auth.admin.updateUserById(
-        id,
-        {
-          ban_duration: 'none',
-        }
-      );
-
-      if (unbanError) {
-        console.error('Error unbanning user:', unbanError);
-        return NextResponse.json(
-          { error: 'Failed to unban user' },
-          { status: 500 }
-        );
-      }
+    // Unban takes precedence over ban if both somehow arrive; handle explicit unban.
+    if (isUnbanChange) {
+      await db
+        .update(user)
+        .set({
+          banned: false,
+          banExpires: null,
+          banReason: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(user.id, id));
+    } else if (isBanChange) {
+      const banExpires = resolveBanExpires(ban?.duration);
+      await db
+        .update(user)
+        .set({
+          banned: true,
+          banExpires,
+          banReason: ban?.reason ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(user.id, id));
     }
 
     return NextResponse.json({
@@ -147,9 +106,6 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error in admin user update API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

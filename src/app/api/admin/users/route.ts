@@ -1,55 +1,50 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db/client';
+import { user, session } from '@/lib/db/schema';
+import { desc, inArray } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const db = await getDb();
 
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+    const rows = await db.select().from(user).orderBy(desc(user.createdAt));
+
+    // Resolve each user's most recent session.createdAt for "last sign in".
+    const lastSignInByUserId = new Map<string, Date>();
+    if (rows.length > 0) {
+      const userIds = rows.map((u) => u.id);
+      const sessions = await db
+        .select({ userId: session.userId, createdAt: session.createdAt })
+        .from(session)
+        .where(inArray(session.userId, userIds));
+
+      for (const s of sessions) {
+        if (!s.createdAt) continue;
+        const existing = lastSignInByUserId.get(s.userId);
+        if (!existing || s.createdAt > existing) {
+          lastSignInByUserId.set(s.userId, s.createdAt);
+        }
+      }
     }
 
-    // Check if user is admin or employee
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'employee') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin or employee access required.' },
-        { status: 403 }
-      );
-    }
-
-    // Get service role client to access all users
-    const serviceSupabase = await createServiceClient();
-
-    // Fetch all users from auth.users
-    const { data: { users }, error: usersError } = await serviceSupabase.auth.admin.listUsers();
-
-    if (usersError) {
-      console.error('Error fetching users:', usersError);
-      return NextResponse.json(
-        { error: 'Failed to fetch users' },
-        { status: 500 }
-      );
-    }
-
-    // Format user data
-    const formattedUsers = users.map(u => ({
-      id: u.id,
-      email: u.email,
-      name: u.user_metadata?.name || 'N/A',
-      role: u.user_metadata?.role || 'customer',
-      payRate: u.user_metadata?.payRate || 0,
-      created_at: u.created_at,
-      banned: false, // TODO: Implement banned_until field in user metadata
-      banned_until: null,
-      last_sign_in_at: u.last_sign_in_at,
-    }));
+    const formattedUsers = rows.map((u) => {
+      const lastSignIn = lastSignInByUserId.get(u.id) ?? null;
+      return {
+        id: u.id,
+        email: u.email,
+        name: u.name ?? 'N/A',
+        role: u.role ?? 'customer',
+        payRate: u.payRate ?? 0,
+        created_at: u.createdAt ? u.createdAt.toISOString() : null,
+        banned: u.banned ?? false,
+        banned_until: u.banExpires ? u.banExpires.toISOString() : null,
+        last_sign_in_at: lastSignIn ? lastSignIn.toISOString() : null,
+      };
+    });
 
     return NextResponse.json({
       users: formattedUsers,
@@ -57,9 +52,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error in admin users API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

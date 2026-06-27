@@ -78,5 +78,8 @@
     "tsx": "^4.7.2",
     "vitest": "^4.1.7",
     "wrangler": "^4.95.0"
+  },
+  "overrides": {
+    "kysely": "0.28.17"
   }
 }

@@ -1,57 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { orders, order_items } from '@/lib/db/schema';
+import { eq, desc, inArray } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    const db = await getDb();
 
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Fetch orders, newest first
+    const orderRows = await db.select().from(orders).orderBy(desc(orders.created_at));
 
-    // Check if user is employee, manager, or admin
-    const role = user.user_metadata?.role;
-    if (!['employee', 'manager', 'admin'].includes(role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    // Fetch all related items in one query
+    const orderIds = orderRows.map((o) => o.id);
+    const itemRows =
+      orderIds.length > 0
+        ? await db.select().from(order_items).where(inArray(order_items.order_id, orderIds))
+        : [];
 
-    // Use service client to bypass RLS (auth already checked above)
-    const serviceSupabase = createServiceClient();
-
-    // Fetch orders with their items
-    const { data: orders, error } = await serviceSupabase
-      .from('orders')
-      .select(`
-        *,
-        order_items (*)
-      `)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching orders:', error);
-      return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
+    const itemsByOrder = new Map<string, typeof itemRows>();
+    for (const item of itemRows) {
+      const list = itemsByOrder.get(item.order_id) ?? [];
+      list.push(item);
+      itemsByOrder.set(item.order_id, list);
     }
 
     // Transform the data to match the frontend format
-    const transformedOrders = orders?.map(order => ({
+    const transformedOrders = orderRows.map((order) => ({
       id: order.id,
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,
       customerPhone: order.customer_phone,
-      total: parseFloat(order.total),
+      total: order.total,
       status: order.status,
-      items: order.order_items.map((item: any) => ({
+      items: (itemsByOrder.get(order.id) ?? []).map((item) => ({
         id: item.id,
         name: item.product_name,
         quantity: item.quantity,
-        price: parseFloat(item.price),
+        price: item.price,
       })),
       createdAt: order.created_at,
       pickupDate: order.pickup_date,
@@ -74,17 +64,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
     const body = await request.json();
     const {
@@ -113,79 +94,90 @@ export async function POST(request: NextRequest) {
 
     // Validate pickup-specific fields
     if (deliveryType === 'pickup' && (!pickupDate || !pickupTime)) {
-      return NextResponse.json({ error: 'Pickup date and time are required for pickup orders' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Pickup date and time are required for pickup orders' },
+        { status: 400 }
+      );
     }
 
     // Validate delivery-specific fields
-    if (deliveryType === 'delivery' && (!deliveryAddress || !deliveryCity || !deliveryPostalCode)) {
-      return NextResponse.json({ error: 'Delivery address, city, and postal code are required for delivery orders' }, { status: 400 });
+    if (
+      deliveryType === 'delivery' &&
+      (!deliveryAddress || !deliveryCity || !deliveryPostalCode)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Delivery address, city, and postal code are required for delivery orders',
+        },
+        { status: 400 }
+      );
     }
 
-    // Use service client to bypass RLS (auth already checked above)
-    const serviceSupabase = createServiceClient();
+    const db = await getDb();
+    const now = new Date().toISOString();
 
     // Prepare order data
-    const orderData: any = {
+    const orderData = {
+      id: crypto.randomUUID(),
       order_number: orderNumber,
       customer_name: customerName,
       customer_email: customerEmail,
-      customer_phone: customerPhone,
+      customer_phone: customerPhone ?? null,
       total,
       status,
       payment_method: paymentMethod,
-      payment_status: paymentStatus || (paymentMethod === 'online' ? 'paid' : 'pending'),
+      payment_status:
+        paymentStatus || (paymentMethod === 'online' ? 'paid' : 'pending'),
       delivery_type: deliveryType,
+      pickup_date: deliveryType === 'pickup' ? pickupDate : null,
+      pickup_time: deliveryType === 'pickup' ? pickupTime : null,
+      delivery_address: deliveryType === 'pickup' ? null : deliveryAddress ?? null,
+      delivery_city: deliveryType === 'pickup' ? null : deliveryCity ?? null,
+      delivery_postal_code:
+        deliveryType === 'pickup' ? null : deliveryPostalCode ?? null,
+      delivery_instructions:
+        deliveryType === 'pickup' ? null : deliveryInstructions ?? null,
+      created_at: now,
+      updated_at: now,
     };
 
-    // Add pickup or delivery specific fields
-    if (deliveryType === 'pickup') {
-      orderData.pickup_date = pickupDate;
-      orderData.pickup_time = pickupTime;
-    } else {
-      orderData.delivery_address = deliveryAddress;
-      orderData.delivery_city = deliveryCity;
-      orderData.delivery_postal_code = deliveryPostalCode;
-      orderData.delivery_instructions = deliveryInstructions;
-    }
-
     // Insert order
-    const { data: order, error: orderError } = await serviceSupabase
-      .from('orders')
-      .insert(orderData)
-      .select()
-      .single();
-
-    if (orderError) {
-      console.error('Error creating order:', orderError);
-      return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
-    }
+    const [order] = await db.insert(orders).values(orderData).returning();
 
     // Insert order items
-    const orderItems = items.map((item: any) => ({
-      order_id: order.id,
-      product_name: item.name,
-      quantity: item.quantity,
-      price: item.price,
-    }));
+    const orderItems = (items as Array<{ name: string; quantity: number; price: number }>).map(
+      (item) => ({
+        id: crypto.randomUUID(),
+        order_id: order.id,
+        product_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        created_at: now,
+      })
+    );
 
-    const { error: itemsError } = await serviceSupabase
-      .from('order_items')
-      .insert(orderItems);
-
-    if (itemsError) {
+    try {
+      if (orderItems.length > 0) {
+        await db.insert(order_items).values(orderItems);
+      }
+    } catch (itemsError) {
       console.error('Error creating order items:', itemsError);
-      // Rollback order creation
-      await serviceSupabase.from('orders').delete().eq('id', order.id);
+      // Rollback order creation (D1 has no cross-statement transaction here)
+      await db.delete(orders).where(eq(orders.id, order.id));
       return NextResponse.json({ error: 'Failed to create order items' }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true,
-      order: {
-        id: order.id,
-        orderNumber: order.order_number,
-      }
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        order: {
+          id: order.id,
+          orderNumber: order.order_number,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error in POST /api/orders:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

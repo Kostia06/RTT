@@ -1,45 +1,22 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { contact_messages } from '@/lib/db/schema';
+import { eq, count } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 // GET - Get count of new messages (employee only)
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const db = await getDb();
+    const [{ value }] = await db
+      .select({ value: count() })
+      .from(contact_messages)
+      .where(eq(contact_messages.status, 'new'));
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is employee or admin
-    const isEmployee = user.user_metadata?.role === 'employee' || user.user_metadata?.role === 'admin';
-    if (!isEmployee) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Use service client to count new messages
-    const serviceClient = await createServiceClient();
-    const { count, error } = await serviceClient
-      .from('contact_messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'new');
-
-    if (error) {
-      console.error('Supabase error counting messages:', error);
-      return NextResponse.json(
-        {
-          error: 'Failed to count messages',
-          details: error.message || 'Unknown error',
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ count: count || 0 });
+    return NextResponse.json({ count: value ?? 0 });
   } catch (error) {
     console.error('Error counting messages:', error);
     return NextResponse.json(

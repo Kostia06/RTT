@@ -1,61 +1,85 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db/client';
+import {
+  shifts,
+  shift_production_assignments,
+  production_items,
+} from '@/lib/db/schema';
+import { and, eq, gte, lte, inArray, asc } from 'drizzle-orm';
+import { requireUser, requireRole, hasRole } from '@/lib/auth/guards';
+
+type ProductionAssignment = typeof shift_production_assignments.$inferSelect & {
+  production_item?: typeof production_items.$inferSelect;
+};
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'employee') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const gate = await requireUser(request);
+    if (gate.error) return gate.error;
+    const { user } = gate;
 
     const { searchParams } = new URL(request.url);
-    const employeeId = searchParams.get('employeeId');
+    const requestedEmployeeId = searchParams.get('employeeId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const includeProduction = searchParams.get('includeProduction') === 'true';
 
-    let query = supabase
-      .from('shifts')
-      .select(includeProduction
-        ? `
-          *,
-          production_assignments:shift_production_assignments(
-            *,
-            production_item:production_items(*)
-          )
-        `
-        : '*'
-      )
-      .order('start_time', { ascending: true });
+    // Employees only see their own shifts; managers/admins may scope to anyone.
+    const isPrivileged = hasRole(user.role, 'manager');
+    const effectiveEmployeeId = isPrivileged
+      ? requestedEmployeeId ?? null
+      : user.id;
 
-    // Non-admin users only see their own shifts
-    if (role !== 'admin') {
-      query = query.eq('employee_id', user.id);
-    } else if (employeeId) {
-      query = query.eq('employee_id', employeeId);
+    const db = await getDb();
+
+    const conditions = [];
+    if (effectiveEmployeeId) {
+      conditions.push(eq(shifts.employee_id, effectiveEmployeeId));
     }
-
     if (startDate) {
-      query = query.gte('start_time', startDate);
+      conditions.push(gte(shifts.start_time, startDate));
     }
-
     if (endDate) {
-      query = query.lte('end_time', endDate);
+      conditions.push(lte(shifts.end_time, endDate));
     }
 
-    const { data: shifts, error } = await query;
+    const shiftRows = await db
+      .select()
+      .from(shifts)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(asc(shifts.start_time));
 
-    if (error) throw error;
+    // Optionally hydrate production assignments (+ their production item).
+    const assignmentsByShift = new Map<string, ProductionAssignment[]>();
+    if (includeProduction && shiftRows.length > 0) {
+      const shiftIds = shiftRows.map((s) => s.id);
+      const assignments = await db
+        .select()
+        .from(shift_production_assignments)
+        .where(inArray(shift_production_assignments.shift_id, shiftIds));
 
-    // Transform to match the frontend format
-    const transformedShifts = (shifts as any[])?.map((shift: any) => ({
+      const itemIds = [
+        ...new Set(assignments.map((a) => a.production_item_id)),
+      ];
+      const items = itemIds.length
+        ? await db
+            .select()
+            .from(production_items)
+            .where(inArray(production_items.id, itemIds))
+        : [];
+      const itemsById = new Map(items.map((item) => [item.id, item]));
+
+      for (const assignment of assignments) {
+        const list = assignmentsByShift.get(assignment.shift_id) ?? [];
+        list.push({
+          ...assignment,
+          production_item: itemsById.get(assignment.production_item_id),
+        });
+        assignmentsByShift.set(assignment.shift_id, list);
+      }
+    }
+
+    const transformedShifts = shiftRows.map((shift) => ({
       id: shift.id,
       employeeId: shift.employee_id,
       employeeName: shift.employee_name,
@@ -64,8 +88,10 @@ export async function GET(request: Request) {
       position: shift.position,
       status: shift.status,
       notes: shift.notes,
-      productionAssignments: shift.production_assignments || undefined,
-    })) || [];
+      productionAssignments: includeProduction
+        ? assignmentsByShift.get(shift.id) ?? []
+        : undefined,
+    }));
 
     return NextResponse.json({ shifts: transformedShifts });
   } catch (error) {
@@ -76,29 +102,31 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'manager');
+    if (gate.error) return gate.error;
 
     const body = await request.json();
-    const { employeeId, employeeName, startTime, endTime, position, notes, productionAssignments } = body;
+    const {
+      employeeId,
+      employeeName,
+      startTime,
+      endTime,
+      position,
+      notes,
+      productionAssignments,
+    } = body;
 
     if (!employeeId || !employeeName || !startTime || !endTime || !position) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Create the shift
-    const { data: shift, error: shiftError } = await supabase
-      .from('shifts')
-      .insert([{
+    const db = await getDb();
+    const now = new Date().toISOString();
+
+    const [shift] = await db
+      .insert(shifts)
+      .values({
+        id: crypto.randomUUID(),
         employee_id: employeeId,
         employee_name: employeeName,
         start_time: startTime,
@@ -106,30 +134,34 @@ export async function POST(request: Request) {
         position,
         status: 'scheduled',
         notes: notes || '',
-      }])
-      .select()
-      .single();
+        created_at: now,
+      })
+      .returning();
 
-    if (shiftError) throw shiftError;
+    if (Array.isArray(productionAssignments) && productionAssignments.length > 0) {
+      try {
+        const assignmentsToInsert = productionAssignments.map(
+          (assignment: {
+            productionItemId: string;
+            binsRequired?: number;
+            targetPortions?: number;
+            notes?: string;
+          }) => ({
+            id: crypto.randomUUID(),
+            shift_id: shift.id,
+            production_item_id: assignment.productionItemId,
+            bins_required: assignment.binsRequired ?? null,
+            target_portions: assignment.targetPortions ?? null,
+            notes: assignment.notes ?? null,
+            status: 'pending',
+            created_at: now,
+          })
+        );
 
-    // Create production assignments if provided
-    if (productionAssignments && productionAssignments.length > 0) {
-      const assignmentsToInsert = productionAssignments.map((assignment: any) => ({
-        shift_id: shift.id,
-        production_item_id: assignment.productionItemId,
-        bins_required: assignment.binsRequired,
-        target_portions: assignment.targetPortions,
-        notes: assignment.notes || null,
-        status: 'pending',
-      }));
-
-      const { error: assignmentsError } = await supabase
-        .from('shift_production_assignments')
-        .insert(assignmentsToInsert);
-
-      if (assignmentsError) {
+        await db.insert(shift_production_assignments).values(assignmentsToInsert);
+      } catch (assignmentsError) {
+        // Don't fail the whole request, just log the error.
         console.error('Error creating production assignments:', assignmentsError);
-        // Don't fail the whole request, just log the error
       }
     }
 
@@ -155,49 +187,32 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'employee') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'manager');
+    if (gate.error) return gate.error;
 
     const body = await request.json();
     const { shiftId, status } = body;
 
-    // Get the shift first to check permissions
-    const { data: shift, error: fetchError } = await supabase
-      .from('shifts')
-      .select('*')
-      .eq('id', shiftId)
-      .single();
+    const db = await getDb();
 
-    if (fetchError || !shift) {
+    const [shift] = await db
+      .select()
+      .from(shifts)
+      .where(eq(shifts.id, shiftId))
+      .limit(1);
+
+    if (!shift) {
       return NextResponse.json({ error: 'Shift not found' }, { status: 404 });
     }
 
-    // Employees can only confirm their own shifts
-    if (role !== 'admin' && shift.employee_id !== user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
-    // Update the shift
-    const { data: updatedShift, error: updateError } = await supabase
-      .from('shifts')
-      .update({
+    const [updatedShift] = await db
+      .update(shifts)
+      .set({
         status: status || shift.status,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', shiftId)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
+      .where(eq(shifts.id, shiftId))
+      .returning();
 
     return NextResponse.json({
       success: true,

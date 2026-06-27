@@ -1,45 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { product_variants } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
-// GET /api/products/[id]/variants - Fetch all variants for a product
+// GET /api/products/[id]/variants - Fetch all variants for a product (public)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const supabase = createServiceClient();
+    const db = await getDb();
 
-    const { data: variants, error } = await supabase
-      .from('product_variants')
-      .select('*')
-      .eq('product_id', id)
-      .order('size', { ascending: true })
-      .order('pack_quantity', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching variants:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    const variants = await db
+      .select()
+      .from(product_variants)
+      .where(eq(product_variants.product_id, id));
 
     return NextResponse.json({ variants: variants || [] });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in GET /api/products/[id]/variants:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to fetch variants';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// POST /api/products/[id]/variants - Create a new variant
+// POST /api/products/[id]/variants - Create a new variant (admin)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
   try {
     const { id } = await params;
     const body = await request.json();
-    const supabase = createServiceClient();
+    const db = await getDb();
 
-    const { name, sku, size, pack_quantity, price, stock, active } = body;
+    const { name, sku, size, pack_quantity, price, stock, options } = body;
 
     // Validate required fields
     if (!name || !sku || !size) {
@@ -50,43 +50,42 @@ export async function POST(
     }
 
     // Check if SKU already exists
-    const { data: existingSku } = await supabase
-      .from('product_variants')
-      .select('id')
-      .eq('sku', sku)
-      .single();
+    const existing = await db
+      .select({ id: product_variants.id })
+      .from(product_variants)
+      .where(eq(product_variants.sku, sku))
+      .limit(1);
 
-    if (existingSku) {
+    if (existing[0]) {
       return NextResponse.json(
         { error: 'SKU already exists' },
         { status: 400 }
       );
     }
 
-    // Insert the new variant
-    const { data: variant, error } = await supabase
-      .from('product_variants')
-      .insert({
+    // The product_variants table has no size/pack_quantity columns; fold them
+    // (and any caller-supplied options) into the `options` JSON column.
+    const mergedOptions: Record<string, string> = { ...(options ?? {}) };
+    if (size !== undefined) mergedOptions.size = String(size);
+    if (pack_quantity !== undefined) mergedOptions.pack_quantity = String(pack_quantity);
+
+    const inserted = await db
+      .insert(product_variants)
+      .values({
+        id: crypto.randomUUID(),
         product_id: id,
         name,
         sku,
-        size,
-        pack_quantity: pack_quantity || 0,
         price: price || 0,
         stock: stock || 0,
-        active: active !== undefined ? active : true,
+        options: mergedOptions,
       })
-      .select()
-      .single();
+      .returning();
 
-    if (error) {
-      console.error('Error creating variant:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ variant }, { status: 201 });
-  } catch (error: any) {
+    return NextResponse.json({ variant: inserted[0] }, { status: 201 });
+  } catch (error) {
     console.error('Error in POST /api/products/[id]/variants:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create variant';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -264,7 +264,8 @@ function ScanFridgeContent() {
                 <div className="space-y-3">
                   {fridgeData.inventory.map((item) => {
                     const batchDate = new Date(item.batch_date);
-                    const expDate = new Date(item.expiration_date);
+                    const expDate = new Date(batchDate);
+                    expDate.setMonth(expDate.getMonth() + 3);
                     const daysLeft = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
                     return (

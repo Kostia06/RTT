@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { createClient } from '@/lib/supabase/client';
+import { signOut } from '@/lib/auth/client';
 import { useRouter } from 'next/navigation';
 
 import gsap from 'gsap';
@@ -34,7 +34,6 @@ interface EmployeeStats {
 export default function EmployeeDashboard() {
   const { user, isAuthenticated, isEmployee, isAdmin, isLoading } = useAuth();
   const router = useRouter();
-  const supabase = createClient();
   const heroRef = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState<EmployeeStats>({
     ordersToday: 0,
@@ -160,8 +159,9 @@ export default function EmployeeDashboard() {
   const title = 'EMPLOYEE DASHBOARD';
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push('/');
+    router.refresh();
   };
 
   return (

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { fridges } from '@/lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 // Generate unique QR code string
 function generateQRCode(): string {
@@ -8,24 +11,22 @@ function generateQRCode(): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('active') !== 'false';
 
-    let query = supabase
-      .from('fridges')
-      .select('*')
-      .order('name', { ascending: true });
+    const rows = activeOnly
+      ? await db
+          .select()
+          .from(fridges)
+          .where(eq(fridges.active, true))
+          .orderBy(asc(fridges.name))
+      : await db.select().from(fridges).orderBy(asc(fridges.name));
 
-    if (activeOnly) {
-      query = query.eq('active', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    return NextResponse.json({ fridges: data || [] });
+    return NextResponse.json({ fridges: rows });
   } catch (error: any) {
     console.error('Error fetching fridges:', error);
     return NextResponse.json(
@@ -37,38 +38,31 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const body = await request.json();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
 
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const db = await getDb();
+    const body = await request.json();
 
     // Generate QR code if not provided
     const qrCode = body.qr_code || generateQRCode();
 
-    const { data, error } = await supabase
-      .from('fridges')
-      .insert([{
+    const [fridge] = await db
+      .insert(fridges)
+      .values({
+        id: crypto.randomUUID(),
         name: body.name,
         qr_code: qrCode,
-        location: body.location,
-        max_capacity_cases: body.max_capacity_cases,
-        max_capacity_portions: body.max_capacity_portions,
+        location: body.location ?? null,
+        max_capacity_cases: body.max_capacity_cases ?? null,
+        max_capacity_portions: body.max_capacity_portions ?? null,
         temperature_log_required: body.temperature_log_required !== false,
         active: body.active !== false,
-      }])
-      .select()
-      .single();
+        created_at: new Date().toISOString(),
+      })
+      .returning();
 
-    if (error) throw error;
-
-    return NextResponse.json({ fridge: data }, { status: 201 });
+    return NextResponse.json({ fridge }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating fridge:', error);
     return NextResponse.json(

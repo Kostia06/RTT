@@ -1,59 +1,49 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { getDb } from '@/lib/db/client';
+import { time_entries } from '@/lib/db/schema';
+import { and, gte, lte, desc } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'manager');
+    if (gate.error) return gate.error;
+
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const db = await getDb();
 
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+    const conditions = [];
+    if (startDate) {
+      conditions.push(gte(time_entries.clock_in, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(time_entries.clock_in, endDate));
     }
 
-    // Check if user is admin
-    const role = user.user_metadata?.role;
-    if (role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Admin access required.' },
-        { status: 403 }
-      );
-    }
+    const rows = await db
+      .select()
+      .from(time_entries)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(time_entries.clock_in));
 
-    console.log('GET: Fetching all time entries for admin');
+    const entries = rows.map((entry) => ({
+      id: entry.id,
+      employeeId: entry.employee_id,
+      employeeName: entry.employee_name,
+      clockIn: entry.clock_in,
+      clockOut: entry.clock_out,
+      totalHours: entry.total_hours,
+      date: entry.clock_in.split('T')[0],
+      notes: entry.notes || '',
+      isManual: entry.is_manual,
+    }));
 
-    // Mock data for now - will be replaced with actual Supabase query
-    // This would query the time_entries table with date filters
-    const mockEntries = [
-      {
-        id: '1',
-        employeeId: user.id,
-        employeeName: user.user_metadata?.name || 'Test User',
-        clockIn: new Date().toISOString(),
-        clockOut: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-        totalHours: 8,
-        date: new Date().toISOString().split('T')[0],
-        notes: 'Sample entry',
-        isManual: false,
-      },
-    ];
-
-    return NextResponse.json({
-      entries: mockEntries,
-      total: mockEntries.length,
-    });
+    return NextResponse.json({ entries, total: entries.length });
   } catch (error) {
     console.error('Error in time tracking all API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

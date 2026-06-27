@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { recipes } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function POST(request: Request) {
+  const gate = await requireRole(request, 'admin');
+  if (gate.error) return gate.error;
+
   try {
-    const supabase = await createClient();
-
-    // Check if user is authenticated and is an employee/admin
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const db = await getDb();
     const body = await request.json();
     const {
       title,
@@ -36,51 +35,43 @@ export async function POST(request: Request) {
     }
 
     // Check if slug already exists
-    const { data: existingRecipe } = await supabase
-      .from('recipes')
-      .select('id')
-      .eq('slug', slug)
-      .single();
+    const existing = await db
+      .select({ id: recipes.id })
+      .from(recipes)
+      .where(eq(recipes.slug, slug))
+      .limit(1);
 
-    if (existingRecipe) {
+    if (existing[0]) {
       return NextResponse.json(
         { error: 'A recipe with this slug already exists' },
         { status: 400 }
       );
     }
 
-    // Create recipe
-    const { data: recipe, error } = await supabase
-      .from('recipes')
-      .insert({
+    // Create recipe. JSON columns are serialized by Drizzle (mode: 'json').
+    const now = new Date().toISOString();
+    const inserted = await db
+      .insert(recipes)
+      .values({
+        id: crypto.randomUUID(),
         title,
         slug,
         description,
         difficulty,
         servings,
-        ingredients: JSON.stringify(ingredients),
-        instructions: JSON.stringify(instructions),
-        nutritional_info: nutritional_info ? JSON.stringify(nutritional_info) : null,
-        images: JSON.stringify(images || []),
+        ingredients,
+        instructions,
+        nutritional_info: nutritional_info ?? null,
+        images: images ?? [],
         tips,
         active,
         featured,
+        created_at: now,
+        updated_at: now,
       })
-      .select()
-      .single();
+      .returning();
 
-    if (error) {
-      console.error('Database error:', error);
-      return NextResponse.json(
-        {
-          error: 'Failed to create recipe',
-          details: error.message,
-          code: error.code,
-          hint: error.hint
-        },
-        { status: 500 }
-      );
-    }
+    const recipe = inserted[0];
 
     return NextResponse.json({
       success: true,
@@ -92,8 +83,9 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error creating recipe:', error);
+    const message = error instanceof Error ? error.message : 'Failed to create recipe';
     return NextResponse.json(
-      { error: 'Failed to create recipe' },
+      { error: 'Failed to create recipe', details: message },
       { status: 500 }
     );
   }

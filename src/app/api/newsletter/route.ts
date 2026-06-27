@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { newsletter_subscribers } from '@/lib/db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
+// POST - Subscribe to the newsletter (public)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const { email, source = 'website' } = await request.json();
 
     if (!email || !email.includes('@')) {
@@ -13,12 +16,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const db = await getDb();
+
     // Check if email already exists
-    const { data: existing } = await supabase
-      .from('newsletter_subscribers')
-      .select('id, is_active')
-      .eq('email', email)
-      .single();
+    const [existing] = await db
+      .select({ id: newsletter_subscribers.id, is_active: newsletter_subscribers.is_active })
+      .from(newsletter_subscribers)
+      .where(eq(newsletter_subscribers.email, email));
 
     if (existing) {
       if (existing.is_active) {
@@ -26,61 +30,60 @@ export async function POST(request: NextRequest) {
           { error: 'Email already subscribed' },
           { status: 409 }
         );
-      } else {
-        // Reactivate subscription
-        const { error } = await supabase
-          .from('newsletter_subscribers')
-          .update({ is_active: true, updated_at: new Date().toISOString() })
-          .eq('id', existing.id);
-
-        if (error) throw error;
-
-        return NextResponse.json({
-          message: 'Subscription reactivated successfully',
-          subscribed: true
-        });
       }
+
+      // Reactivate subscription
+      await db
+        .update(newsletter_subscribers)
+        .set({ is_active: true, updated_at: new Date().toISOString() })
+        .where(eq(newsletter_subscribers.id, existing.id));
+
+      return NextResponse.json({
+        message: 'Subscription reactivated successfully',
+        subscribed: true,
+      });
     }
 
     // Create new subscription
-    const { error } = await supabase
-      .from('newsletter_subscribers')
-      .insert([{ email, source }]);
-
-    if (error) throw error;
+    await db.insert(newsletter_subscribers).values({
+      id: crypto.randomUUID(),
+      email,
+      source,
+      is_active: true,
+      subscribed_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       message: 'Successfully subscribed to newsletter',
-      subscribed: true
+      subscribed: true,
     });
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Newsletter signup error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to subscribe to newsletter' },
+      { error: error instanceof Error ? error.message : 'Failed to subscribe to newsletter' },
       { status: 500 }
     );
   }
 }
 
+// GET - List active subscribers (employee only)
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
-    const { data, error } = await supabase
-      .from('newsletter_subscribers')
-      .select('*')
-      .eq('is_active', true)
-      .order('subscribed_at', { ascending: false });
+    const db = await getDb();
+    const subscribers = await db
+      .select()
+      .from(newsletter_subscribers)
+      .where(eq(newsletter_subscribers.is_active, true))
+      .orderBy(desc(newsletter_subscribers.subscribed_at));
 
-    if (error) throw error;
-
-    return NextResponse.json({ subscribers: data || [] });
-
-  } catch (error: any) {
+    return NextResponse.json({ subscribers });
+  } catch (error) {
     console.error('Fetch subscribers error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch subscribers' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch subscribers' },
       { status: 500 }
     );
   }

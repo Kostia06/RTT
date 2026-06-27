@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { fridges } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { id } = await params;
 
-    const { data, error } = await supabase
-      .from('fridges')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const [fridge] = await db
+      .select()
+      .from(fridges)
+      .where(eq(fridges.id, id))
+      .limit(1);
 
-    if (error) throw error;
+    if (!fridge) {
+      return NextResponse.json({ error: 'Fridge not found' }, { status: 404 });
+    }
 
-    return NextResponse.json({ fridge: data });
+    return NextResponse.json({ fridge });
   } catch (error: any) {
     console.error('Error fetching fridge:', error);
     return NextResponse.json(
@@ -32,22 +40,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { id } = await params;
     const body = await request.json();
 
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from('fridges')
-      .update({
+    const [fridge] = await db
+      .update(fridges)
+      .set({
         name: body.name,
         location: body.location,
         max_capacity_cases: body.max_capacity_cases,
@@ -56,13 +58,14 @@ export async function PUT(
         active: body.active,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
-      .select()
-      .single();
+      .where(eq(fridges.id, id))
+      .returning();
 
-    if (error) throw error;
+    if (!fridge) {
+      return NextResponse.json({ error: 'Fridge not found' }, { status: 404 });
+    }
 
-    return NextResponse.json({ fridge: data });
+    return NextResponse.json({ fridge });
   } catch (error: any) {
     console.error('Error updating fridge:', error);
     return NextResponse.json(
@@ -77,28 +80,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { id } = await params;
 
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     // Soft delete
-    const { error } = await supabase
-      .from('fridges')
-      .update({
+    await db
+      .update(fridges)
+      .set({
         active: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
-
-    if (error) throw error;
+      .where(eq(fridges.id, id));
 
     return NextResponse.json({ message: 'Fridge deleted successfully' });
   } catch (error: any) {

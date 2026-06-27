@@ -1,23 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { production_items } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { id } = await params;
 
-    const { data, error } = await supabase
-      .from('production_items')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const [item] = await db
+      .select()
+      .from(production_items)
+      .where(eq(production_items.id, id));
 
-    if (error) throw error;
+    if (!item) {
+      return NextResponse.json(
+        { error: 'Production item not found' },
+        { status: 404 }
+      );
+    }
 
-    return NextResponse.json({ item: data });
+    return NextResponse.json({ item });
   } catch (error: any) {
     console.error('Error fetching production item:', error);
     return NextResponse.json(
@@ -32,22 +42,16 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { id } = await params;
     const body = await request.json();
 
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from('production_items')
-      .update({
+    const [item] = await db
+      .update(production_items)
+      .set({
         name: body.name,
         sku: body.sku,
         category: body.category,
@@ -56,13 +60,17 @@ export async function PUT(
         active: body.active,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
-      .select()
-      .single();
+      .where(eq(production_items.id, id))
+      .returning();
 
-    if (error) throw error;
+    if (!item) {
+      return NextResponse.json(
+        { error: 'Production item not found' },
+        { status: 404 }
+      );
+    }
 
-    return NextResponse.json({ item: data });
+    return NextResponse.json({ item });
   } catch (error: any) {
     console.error('Error updating production item:', error);
     return NextResponse.json(
@@ -77,28 +85,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { id } = await params;
 
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     // Soft delete
-    const { error } = await supabase
-      .from('production_items')
-      .update({
+    await db
+      .update(production_items)
+      .set({
         active: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id);
-
-    if (error) throw error;
+      .where(eq(production_items.id, id));
 
     return NextResponse.json({ message: 'Production item deleted successfully' });
   } catch (error: any) {

@@ -1,53 +1,45 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
+import { getDb } from '@/lib/db/client';
+import { restock_orders } from '@/lib/db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
+import type { RestockOrderRow } from '@/lib/db/schema/inventory';
 
-// Mock database
-let restockOrders: any[] = [
-  {
-    id: '1',
-    supplierId: '1',
-    supplierName: 'Kyoto Noodle Supply Co.',
-    items: [
-      { itemId: 'item1', itemName: 'Fresh Noodles', quantity: 200, costPerUnit: 1.5 },
-      { itemId: 'item2', itemName: 'Dried Noodles', quantity: 100, costPerUnit: 2.0 },
-    ],
-    totalCost: 500,
-    status: 'ordered',
-    orderedBy: 'John Doe',
-    orderedAt: new Date(Date.now() - 172800000).toISOString(),
-    expectedDelivery: new Date(Date.now() + 86400000).toISOString(),
-    notes: 'Regular weekly order',
-  },
-];
+type RestockItem = { itemId: string; itemName: string; quantity: number; costPerUnit: number };
+
+/** Map a snake_case D1 restock order row to the camelCase shape the UI consumes. */
+function toOrderResponse(row: RestockOrderRow) {
+  return {
+    id: row.id,
+    supplierId: row.supplier_id,
+    supplierName: row.supplier_name,
+    items: row.items ?? [],
+    totalCost: row.total_cost,
+    status: row.status,
+    orderedBy: row.ordered_by ?? '',
+    orderedAt: row.ordered_at,
+    expectedDelivery: row.expected_delivery ?? null,
+    receivedAt: row.received_at ?? null,
+    notes: row.notes ?? '',
+  };
+}
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'employee') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    let filtered = [...restockOrders];
+    const db = await getDb();
+    const rows = await db
+      .select()
+      .from(restock_orders)
+      .where(status ? eq(restock_orders.status, status) : undefined)
+      .orderBy(desc(restock_orders.ordered_at));
 
-    if (status) {
-      filtered = filtered.filter(o => o.status === status);
-    }
-
-    // Sort by ordered date descending
-    filtered.sort((a, b) => new Date(b.orderedAt).getTime() - new Date(a.orderedAt).getTime());
-
-    return NextResponse.json({ orders: filtered });
+    return NextResponse.json({ orders: rows.map(toOrderResponse) });
   } catch (error) {
     console.error('Error fetching restock orders:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -56,47 +48,46 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'employee') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'manager');
+    if (gate.error) return gate.error;
+    const { user } = gate;
 
     const body = await request.json();
     const { supplierId, supplierName, items, expectedDelivery, notes } = body;
 
-    if (!supplierId || !supplierName || !items || items.length === 0) {
+    if (!supplierId || !supplierName || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const totalCost = items.reduce((sum: number, item: any) => {
-      return sum + item.quantity * item.costPerUnit;
-    }, 0);
+    const totalCost = (items as RestockItem[]).reduce(
+      (sum, item) => sum + item.quantity * item.costPerUnit,
+      0
+    );
 
-    const newOrder = {
-      id: uuidv4(),
-      supplierId,
-      supplierName,
-      items,
-      totalCost: Math.round(totalCost * 100) / 100,
-      status: 'draft',
-      orderedBy: user.user_metadata?.name || user.email,
-      orderedAt: new Date().toISOString(),
-      expectedDelivery: expectedDelivery || null,
-      notes: notes || '',
-    };
+    const db = await getDb();
+    const now = new Date().toISOString();
 
-    restockOrders.push(newOrder);
+    const [row] = await db
+      .insert(restock_orders)
+      .values({
+        id: crypto.randomUUID(),
+        supplier_id: supplierId,
+        supplier_name: supplierName,
+        items: items as RestockItem[],
+        total_cost: Math.round(totalCost * 100) / 100,
+        status: 'draft',
+        ordered_by: user.name || user.id,
+        ordered_at: now,
+        expected_delivery: expectedDelivery || null,
+        notes: notes || '',
+        created_at: now,
+        updated_at: now,
+      })
+      .returning();
 
     return NextResponse.json({
       success: true,
-      order: newOrder,
+      order: toOrderResponse(row),
       message: 'Restock order created successfully',
     });
   } catch (error) {
@@ -107,38 +98,36 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'employee') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'manager');
+    if (gate.error) return gate.error;
 
     const body = await request.json();
     const { orderId, status } = body;
 
-    const order = restockOrders.find(o => o.id === orderId);
-
-    if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    if (!orderId || !status) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (status) {
-      order.status = status;
+    const db = await getDb();
+    const now = new Date().toISOString();
 
-      if (status === 'received') {
-        order.receivedAt = new Date().toISOString();
-      }
+    const [row] = await db
+      .update(restock_orders)
+      .set({
+        status,
+        received_at: status === 'received' ? now : undefined,
+        updated_at: now,
+      })
+      .where(eq(restock_orders.id, orderId))
+      .returning();
+
+    if (!row) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      order,
+      order: toOrderResponse(row),
       message: 'Order updated successfully',
     });
   } catch (error) {

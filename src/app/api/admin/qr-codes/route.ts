@@ -1,45 +1,56 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db/client';
+import { settings } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { generateTimeTrackingQR } from '@/lib/qrcode';
+import { requireRole } from '@/lib/auth/guards';
+
+const QR_TOKEN_KEY = 'time_tracking_qr_token';
+
+/** Decode a settings value that may be JSON-encoded (legacy: `"<token>"`). */
+function decodeToken(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === 'string' ? parsed : value;
+  } catch {
+    return value;
+  }
+}
 
 /**
  * GET /api/admin/qr-codes
- * Get current time tracking QR code
- * Admin only
+ * Get the current time tracking QR code. Creates a token if none exists.
+ * Admin only.
  */
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const db = await getDb();
+
+    const [row] = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, QR_TOKEN_KEY))
+      .limit(1);
+
+    let token = decodeToken(row?.value ?? null);
+
+    if (!token) {
+      token = crypto.randomUUID();
+      await db
+        .insert(settings)
+        .values({ key: QR_TOKEN_KEY, value: JSON.stringify(token) })
+        .onConflictDoUpdate({
+          target: settings.key,
+          set: { value: JSON.stringify(token) },
+        });
     }
 
-    const role = user.user_metadata?.role;
-    if (role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
-    }
-
-    // Use service client to fetch from settings table (bypasses RLS)
-    const serviceSupabase = createServiceClient();
-    const { data: settingData, error: settingError } = await serviceSupabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'time_tracking_qr_token')
-      .single();
-
-    if (settingError || !settingData) {
-      return NextResponse.json({ error: 'QR token not found' }, { status: 404 });
-    }
-
-    const token = settingData.value;
-
-    // Get base URL from request
     const url = new URL(request.url);
     const baseUrl = `${url.protocol}//${url.host}`;
-
-    // Generate QR code
     const qrCodeUrl = await generateTimeTrackingQR(token, baseUrl);
 
     return NextResponse.json({
@@ -55,43 +66,27 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/admin/qr-codes
- * Regenerate time tracking QR code token
- * Admin only
+ * Regenerate the time tracking QR code token.
+ * Admin only.
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
-    }
-
-    // Generate new UUID token using crypto API
     const newToken = crypto.randomUUID();
 
-    // Use service client to update settings table (bypasses RLS)
-    const serviceSupabase = createServiceClient();
-    const { error: settingError } = await serviceSupabase
-      .from('settings')
-      .update({ value: `"${newToken}"` })
-      .eq('key', 'time_tracking_qr_token');
+    const db = await getDb();
+    await db
+      .insert(settings)
+      .values({ key: QR_TOKEN_KEY, value: JSON.stringify(newToken) })
+      .onConflictDoUpdate({
+        target: settings.key,
+        set: { value: JSON.stringify(newToken) },
+      });
 
-    if (settingError) {
-      console.error('Error updating QR token:', settingError);
-      return NextResponse.json({ error: 'Failed to update QR token' }, { status: 500 });
-    }
-
-    // Get base URL from request
     const url = new URL(request.url);
     const baseUrl = `${url.protocol}//${url.host}`;
-
-    // Generate new QR code
     const qrCodeUrl = await generateTimeTrackingQR(newToken, baseUrl);
 
     return NextResponse.json({

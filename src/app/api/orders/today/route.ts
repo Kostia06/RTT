@@ -1,61 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { orders, order_items } from '@/lib/db/schema';
+import { eq, desc, inArray } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is employee, manager, or admin
-    const role = user.user_metadata?.role;
-    if (!['employee', 'manager', 'admin'].includes(role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const db = await getDb();
 
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
 
-    // Use service client to bypass RLS (auth already checked above)
-    const serviceSupabase = createServiceClient();
+    // Fetch orders for today, newest first
+    const orderRows = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.pickup_date, today))
+      .orderBy(desc(orders.created_at));
 
-    // Fetch orders for today
-    const { data: orders, error } = await serviceSupabase
-      .from('orders')
-      .select(`
-        *,
-        order_items (*)
-      `)
-      .eq('pickup_date', today)
-      .order('created_at', { ascending: false });
+    // Fetch all related items in one query
+    const orderIds = orderRows.map((o) => o.id);
+    const itemRows =
+      orderIds.length > 0
+        ? await db.select().from(order_items).where(inArray(order_items.order_id, orderIds))
+        : [];
 
-    if (error) {
-      console.error('Error fetching today orders:', error);
-      return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
+    const itemsByOrder = new Map<string, typeof itemRows>();
+    for (const item of itemRows) {
+      const list = itemsByOrder.get(item.order_id) ?? [];
+      list.push(item);
+      itemsByOrder.set(item.order_id, list);
     }
 
     // Transform the data to match the frontend format
-    const transformedOrders = orders?.map(order => ({
+    const transformedOrders = orderRows.map((order) => ({
       id: order.id,
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,
       customerPhone: order.customer_phone,
-      total: parseFloat(order.total),
+      total: order.total,
       status: order.status,
-      items: order.order_items.map((item: any) => ({
+      items: (itemsByOrder.get(order.id) ?? []).map((item) => ({
         id: item.id,
         name: item.product_name,
         quantity: item.quantity,
-        price: parseFloat(item.price),
+        price: item.price,
       })),
       createdAt: order.created_at,
       pickupDate: order.pickup_date,
@@ -69,7 +62,7 @@ export async function GET(request: NextRequest) {
       deliveryInstructions: order.delivery_instructions,
     }));
 
-    return NextResponse.json({ orders: transformedOrders || [] });
+    return NextResponse.json({ orders: transformedOrders });
   } catch (error) {
     console.error('Error in GET /api/orders/today:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

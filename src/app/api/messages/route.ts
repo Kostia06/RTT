@@ -1,56 +1,31 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { contact_messages } from '@/lib/db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 // GET - Fetch all messages (employee only)
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is employee or admin
-    const isEmployee = user.user_metadata?.role === 'employee' || user.user_metadata?.role === 'admin';
-    if (!isEmployee) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    // Use service client to fetch messages
-    const serviceClient = await createServiceClient();
-    let query = serviceClient
-      .from('contact_messages')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const db = await getDb();
+    const messages = status
+      ? await db
+          .select()
+          .from(contact_messages)
+          .where(eq(contact_messages.status, status))
+          .orderBy(desc(contact_messages.created_at))
+      : await db
+          .select()
+          .from(contact_messages)
+          .orderBy(desc(contact_messages.created_at));
 
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    const { data: messages, error } = await query;
-
-    if (error) {
-      console.error('Supabase error fetching messages:', error);
-      return NextResponse.json(
-        {
-          error: 'Failed to fetch messages',
-          details: error.message || 'Unknown error',
-          hint: error.hint || null,
-          code: error.code || null
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ messages: messages || [] });
+    return NextResponse.json({ messages });
   } catch (error) {
     console.error('Error fetching messages:', error);
     return NextResponse.json(
@@ -74,32 +49,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use regular client with anon key (public endpoint)
-    const supabase = await createClient();
-
-    // Insert message - RLS policy allows public inserts
-    const { error } = await supabase
-      .from('contact_messages')
-      .insert({
-        name,
-        email,
-        subject: subject || 'No subject',
-        message,
-        status: 'new',
-      });
-
-    if (error) {
-      console.error('Supabase error creating message:', error);
-      return NextResponse.json(
-        {
-          error: 'Failed to send message',
-          details: error.message || 'Unknown error',
-          hint: error.hint || null,
-          code: error.code || null
-        },
-        { status: 500 }
-      );
-    }
+    const db = await getDb();
+    await db.insert(contact_messages).values({
+      id: crypto.randomUUID(),
+      name,
+      email,
+      subject: subject || 'No subject',
+      message,
+      status: 'new',
+      created_at: new Date().toISOString(),
+    });
 
     return NextResponse.json(
       { message: 'Message sent successfully' },
@@ -111,7 +70,7 @@ export async function POST(request: Request) {
       {
         error: 'Failed to send message',
         details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

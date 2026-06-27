@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { products, recipes, user } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
+import type { SessionUser } from '@/lib/auth/guards';
 import { generateContentWithFunctions } from '@/lib/gemini/client';
+
+type Db = Awaited<ReturnType<typeof getDb>>;
 
 // Define available functions the AI can call
 const availableFunctions = [
@@ -221,25 +227,19 @@ const availableFunctions = [
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    // Employee tool (linked from the employee dashboard) — require employee role.
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
+    const { user } = gate;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const db = await getDb();
 
     const body = await request.json();
     const { message, images, action } = body;
 
     // If action is provided, execute it (after user confirmation)
     if (action) {
-      // Use service role client for admin operations
-      const serviceClient = await createServiceClient();
-      return await executeAction(action, serviceClient, user);
+      return await executeAction(action, db, user);
     }
 
     // Otherwise, generate AI response with function calling
@@ -263,8 +263,8 @@ When a user asks you to perform an action, use the appropriate function call.
 Be conversational and helpful. Ask for clarification if needed.
 When creating recipes or products, extract all relevant information from the user's message and images.
 
-Current user: ${user.user_metadata?.name || user.email}
-User role: ${user.user_metadata?.role || 'employee'}`;
+Current user: ${user.name || user.email}
+User role: ${user.role || 'employee'}`;
 
     const fullPrompt = `${systemPrompt}\n\nUser: ${message}`;
 
@@ -368,41 +368,41 @@ ${args.featured !== undefined ? `- Featured: ${args.featured}` : ''}`;
   }
 }
 
-async function executeAction(action: any, supabase: any, user: any) {
+async function executeAction(action: any, db: Db, user: SessionUser) {
   const { function: functionName, arguments: args } = action;
 
   try {
     switch (functionName) {
       case 'create_recipe':
-        return await createRecipe(args, supabase);
+        return await createRecipe(args, db);
 
       case 'create_product':
-        return await createProduct(args, supabase);
+        return await createProduct(args, db);
 
       case 'delete_product':
-        return await deleteProduct(args, supabase);
+        return await deleteProduct(args, db);
 
       case 'delete_recipe':
-        return await deleteRecipe(args, supabase);
+        return await deleteRecipe(args, db);
 
       case 'update_product':
-        return await updateProduct(args, supabase);
+        return await updateProduct(args, db);
 
       case 'update_recipe':
-        return await updateRecipe(args, supabase);
+        return await updateRecipe(args, db);
 
       case 'approve_user':
         // Check if user is admin
-        if (user.user_metadata?.role !== 'admin') {
+        if (user.role !== 'admin') {
           return NextResponse.json(
             { error: 'Only admins can approve users' },
             { status: 403 }
           );
         }
-        return await approveUser(args, supabase);
+        return await approveUser(args, db);
 
       case 'update_inventory':
-        return await updateInventory(args, supabase);
+        return await updateInventory(args, db);
 
       default:
         return NextResponse.json({ error: 'Unknown function' }, { status: 400 });
@@ -416,28 +416,27 @@ async function executeAction(action: any, supabase: any, user: any) {
   }
 }
 
-async function createRecipe(args: any, supabase: any) {
-  const { data: recipe, error } = await supabase
-    .from('recipes')
-    .insert({
+async function createRecipe(args: any, db: Db) {
+  const now = new Date().toISOString();
+  const [recipe] = await db
+    .insert(recipes)
+    .values({
+      id: crypto.randomUUID(),
       title: args.title,
       slug: args.slug,
       description: args.description,
       difficulty: args.difficulty,
       servings: args.servings,
-      ingredients: JSON.stringify(args.ingredients),
-      instructions: JSON.stringify(args.instructions),
-      images: JSON.stringify(args.images || []),
+      ingredients: args.ingredients,
+      instructions: args.instructions,
+      images: args.images || [],
       tips: args.tips,
       active: true,
       featured: args.featured || false,
+      created_at: now,
+      updated_at: now,
     })
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
+    .returning();
 
   return NextResponse.json({
     type: 'success',
@@ -447,26 +446,28 @@ async function createRecipe(args: any, supabase: any) {
   });
 }
 
-async function createProduct(args: any, supabase: any) {
-  const { data: product, error } = await supabase
-    .from('products')
-    .insert({
+async function createProduct(args: any, db: Db) {
+  const now = new Date().toISOString();
+  const [product] = await db
+    .insert(products)
+    .values({
+      id: crypto.randomUUID(),
       name: args.name,
       slug: args.slug,
+      // `sku` is required (notNull). The AI create_product schema has no sku,
+      // so derive a stable one from the slug.
+      sku: args.sku || args.slug.toUpperCase(),
       description: args.description,
       price_regular: args.price_regular,
       category: args.category,
-      stock_quantity: args.stock_quantity,
-      images: JSON.stringify(args.images || []),
+      stock: args.stock_quantity,
+      images: args.images || [],
       active: true,
-      is_featured: args.is_featured || false,
+      featured: args.is_featured || false,
+      created_at: now,
+      updated_at: now,
     })
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
+    .returning();
 
   return NextResponse.json({
     type: 'success',
@@ -476,27 +477,23 @@ async function createProduct(args: any, supabase: any) {
   });
 }
 
-async function approveUser(args: any, supabase: any) {
+async function approveUser(args: any, db: Db) {
   // Find user by email
-  const { data: users } = await supabase.auth.admin.listUsers();
-  const targetUser = users?.users.find((u: any) => u.email === args.email);
+  const [targetUser] = await db
+    .select()
+    .from(user)
+    .where(eq(user.email, args.email))
+    .limit(1);
 
   if (!targetUser) {
     throw new Error('User not found');
   }
 
-  // Update user metadata
-  const { error } = await supabase.auth.admin.updateUserById(targetUser.id, {
-    user_metadata: {
-      ...targetUser.user_metadata,
-      role: args.role,
-      approved: true,
-    },
-  });
-
-  if (error) {
-    throw error;
-  }
+  // Set the user's role (approval == having a non-customer role assigned).
+  await db
+    .update(user)
+    .set({ role: args.role, updatedAt: new Date() })
+    .where(eq(user.id, targetUser.id));
 
   return NextResponse.json({
     type: 'success',
@@ -504,34 +501,26 @@ async function approveUser(args: any, supabase: any) {
   });
 }
 
-async function updateInventory(args: any, supabase: any) {
-  const { data: product, error } = await supabase
-    .from('products')
-    .update({ stock_quantity: args.quantity })
-    .eq('slug', args.product_slug)
-    .select()
-    .single();
+async function updateInventory(args: any, db: Db) {
+  const [product] = await db
+    .update(products)
+    .set({ stock: args.quantity, updated_at: new Date().toISOString() })
+    .where(eq(products.slug, args.product_slug))
+    .returning();
 
-  if (error) {
-    throw error;
+  if (!product) {
+    throw new Error('Product not found');
   }
 
   return NextResponse.json({
     type: 'success',
     message: `✅ Inventory updated for ${product.name}: ${args.quantity} units`,
-    data: { id: product.id, stock_quantity: product.stock_quantity },
+    data: { id: product.id, stock_quantity: product.stock },
   });
 }
 
-async function deleteProduct(args: any, supabase: any) {
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('slug', args.slug);
-
-  if (error) {
-    throw error;
-  }
+async function deleteProduct(args: any, db: Db) {
+  await db.delete(products).where(eq(products.slug, args.slug));
 
   return NextResponse.json({
     type: 'success',
@@ -539,15 +528,8 @@ async function deleteProduct(args: any, supabase: any) {
   });
 }
 
-async function deleteRecipe(args: any, supabase: any) {
-  const { error } = await supabase
-    .from('recipes')
-    .delete()
-    .eq('slug', args.slug);
-
-  if (error) {
-    throw error;
-  }
+async function deleteRecipe(args: any, db: Db) {
+  await db.delete(recipes).where(eq(recipes.slug, args.slug));
 
   return NextResponse.json({
     type: 'success',
@@ -555,23 +537,24 @@ async function deleteRecipe(args: any, supabase: any) {
   });
 }
 
-async function updateProduct(args: any, supabase: any) {
-  const updateData: any = {};
+async function updateProduct(args: any, db: Db) {
+  const updateData: Partial<typeof products.$inferInsert> = {
+    updated_at: new Date().toISOString(),
+  };
 
   if (args.name) updateData.name = args.name;
   if (args.price_regular) updateData.price_regular = args.price_regular;
   if (args.description) updateData.description = args.description;
-  if (args.is_featured !== undefined) updateData.is_featured = args.is_featured;
+  if (args.is_featured !== undefined) updateData.featured = args.is_featured;
 
-  const { data: product, error } = await supabase
-    .from('products')
-    .update(updateData)
-    .eq('slug', args.slug)
-    .select()
-    .single();
+  const [product] = await db
+    .update(products)
+    .set(updateData)
+    .where(eq(products.slug, args.slug))
+    .returning();
 
-  if (error) {
-    throw error;
+  if (!product) {
+    throw new Error('Product not found');
   }
 
   return NextResponse.json({
@@ -581,8 +564,10 @@ async function updateProduct(args: any, supabase: any) {
   });
 }
 
-async function updateRecipe(args: any, supabase: any) {
-  const updateData: any = {};
+async function updateRecipe(args: any, db: Db) {
+  const updateData: Partial<typeof recipes.$inferInsert> = {
+    updated_at: new Date().toISOString(),
+  };
 
   if (args.title) updateData.title = args.title;
   if (args.description) updateData.description = args.description;
@@ -590,15 +575,14 @@ async function updateRecipe(args: any, supabase: any) {
   if (args.servings) updateData.servings = args.servings;
   if (args.featured !== undefined) updateData.featured = args.featured;
 
-  const { data: recipe, error } = await supabase
-    .from('recipes')
-    .update(updateData)
-    .eq('slug', args.slug)
-    .select()
-    .single();
+  const [recipe] = await db
+    .update(recipes)
+    .set(updateData)
+    .where(eq(recipes.slug, args.slug))
+    .returning();
 
-  if (error) {
-    throw error;
+  if (!recipe) {
+    throw new Error('Recipe not found');
   }
 
   return NextResponse.json({

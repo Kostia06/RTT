@@ -1,59 +1,34 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
+import { getDb } from '@/lib/db/client';
+import { suppliers } from '@/lib/db/schema';
+import { desc } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
+import type { SupplierRow } from '@/lib/db/schema/inventory';
 
-// Mock database
-let suppliers: any[] = [
-  {
-    id: '1',
-    name: 'Kyoto Noodle Supply Co.',
-    contactPerson: 'Takashi Yamamoto',
-    email: 'takashi@kyotonoodles.jp',
-    phone: '+81-75-123-4567',
-    address: '123 Noodle Street, Kyoto, Japan',
-    products: ['Fresh Noodles', 'Dried Noodles', 'Specialty Flour'],
-    rating: 4.8,
-    notes: 'Premium quality, consistent delivery',
-  },
-  {
-    id: '2',
-    name: 'Tokyo Broth Masters',
-    contactPerson: 'Hiroshi Tanaka',
-    email: 'hiroshi@tokyobroth.jp',
-    phone: '+81-3-987-6543',
-    address: '456 Ramen Avenue, Tokyo, Japan',
-    products: ['Pork Bones', 'Chicken Bones', 'Kombu', 'Dried Shiitake'],
-    rating: 4.9,
-    notes: 'Best bone quality in the region',
-  },
-  {
-    id: '3',
-    name: 'Fresh Toppings Direct',
-    contactPerson: 'Sarah Johnson',
-    email: 'sarah@freshtoppings.com',
-    phone: '+1-555-234-5678',
-    address: '789 Market Street, San Francisco, CA',
-    products: ['Green Onions', 'Bean Sprouts', 'Nori', 'Menma'],
-    rating: 4.5,
-    notes: 'Local supplier, same-day delivery available',
-  },
-];
+/** Map a snake_case D1 supplier row to the camelCase shape the UI consumes. */
+function toSupplierResponse(row: SupplierRow) {
+  return {
+    id: row.id,
+    name: row.name,
+    contactPerson: row.contact_person ?? '',
+    email: row.email ?? '',
+    phone: row.phone ?? '',
+    address: row.address ?? '',
+    products: row.products ?? [],
+    rating: row.rating,
+    notes: row.notes ?? '',
+  };
+}
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
+    const db = await getDb();
+    const rows = await db.select().from(suppliers).orderBy(desc(suppliers.created_at));
 
-    const role = user.user_metadata?.role;
-    if (role !== 'admin' && role !== 'employee') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
-    return NextResponse.json({ suppliers });
+    return NextResponse.json({ suppliers: rows.map(toSupplierResponse) });
   } catch (error) {
     console.error('Error fetching suppliers:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -62,17 +37,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role;
-    if (role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized. Admin access required.' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'manager');
+    if (gate.error) return gate.error;
 
     const body = await request.json();
     const { name, contactPerson, email, phone, address, products, notes } = body;
@@ -81,23 +47,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const newSupplier = {
-      id: uuidv4(),
-      name,
-      contactPerson,
-      email,
-      phone,
-      address: address || '',
-      products: products || [],
-      rating: 0,
-      notes: notes || '',
-    };
+    const db = await getDb();
+    const now = new Date().toISOString();
 
-    suppliers.push(newSupplier);
+    const [row] = await db
+      .insert(suppliers)
+      .values({
+        id: crypto.randomUUID(),
+        name,
+        contact_person: contactPerson,
+        email,
+        phone,
+        address: address || '',
+        products: Array.isArray(products) ? products : [],
+        rating: 0,
+        notes: notes || '',
+        created_at: now,
+        updated_at: now,
+      })
+      .returning();
 
     return NextResponse.json({
       success: true,
-      supplier: newSupplier,
+      supplier: toSupplierResponse(row),
       message: 'Supplier created successfully',
     });
   } catch (error) {

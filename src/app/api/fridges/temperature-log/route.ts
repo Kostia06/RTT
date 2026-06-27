@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { fridge_temperature_logs } from '@/lib/db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const body = await request.json();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
+    const { user } = gate;
 
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const db = await getDb();
+    const body = await request.json();
 
     const { fridge_id, temperature, notes, shift_id } = body;
 
@@ -25,24 +23,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the temperature
-    const { data, error } = await supabase
-      .from('fridge_temperature_logs')
-      .insert([{
+    const [log] = await db
+      .insert(fridge_temperature_logs)
+      .values({
+        id: crypto.randomUUID(),
         fridge_id,
         employee_id: user.id,
         shift_id: shift_id || null,
         temperature,
         notes: notes || null,
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
+        logged_at: new Date().toISOString(),
+      })
+      .returning();
 
     return NextResponse.json({
       success: true,
-      log: data,
-      message: 'Temperature logged successfully'
+      log,
+      message: 'Temperature logged successfully',
     });
   } catch (error: any) {
     console.error('Error logging temperature:', error);
@@ -55,35 +52,28 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
+
+    const db = await getDb();
     const { searchParams } = new URL(request.url);
     const fridgeId = searchParams.get('fridge_id');
     const limit = searchParams.get('limit') || '50';
 
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const rows = fridgeId
+      ? await db
+          .select()
+          .from(fridge_temperature_logs)
+          .where(eq(fridge_temperature_logs.fridge_id, fridgeId))
+          .orderBy(desc(fridge_temperature_logs.logged_at))
+          .limit(parseInt(limit))
+      : await db
+          .select()
+          .from(fridge_temperature_logs)
+          .orderBy(desc(fridge_temperature_logs.logged_at))
+          .limit(parseInt(limit));
 
-    let query = supabase
-      .from('fridge_temperature_logs')
-      .select('*')
-      .order('logged_at', { ascending: false })
-      .limit(parseInt(limit));
-
-    if (fridgeId) {
-      query = query.eq('fridge_id', fridgeId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    return NextResponse.json({ logs: data || [] });
+    return NextResponse.json({ logs: rows });
   } catch (error: any) {
     console.error('Error fetching temperature logs:', error);
     return NextResponse.json(

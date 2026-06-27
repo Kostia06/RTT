@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { newsletter_subscribers } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
+import { sendEmail } from '@/lib/email/emailService';
 
+// POST - Broadcast a newsletter email to all active subscribers (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const gate = await requireRole(request, 'admin');
+    if (gate.error) return gate.error;
+
     const { subject, message } = await request.json();
 
     if (!subject || !message) {
@@ -13,66 +20,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user is authenticated and is an employee
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const db = await getDb();
 
     // Fetch all active newsletter subscribers
-    const { data: subscribers, error: fetchError } = await supabase
-      .from('newsletter_subscribers')
-      .select('email')
-      .eq('is_active', true);
+    const subscribers = await db
+      .select({ email: newsletter_subscribers.email })
+      .from(newsletter_subscribers)
+      .where(eq(newsletter_subscribers.is_active, true));
 
-    if (fetchError) throw fetchError;
-
-    if (!subscribers || subscribers.length === 0) {
+    if (subscribers.length === 0) {
       return NextResponse.json(
         { error: 'No active subscribers found' },
         { status: 404 }
       );
     }
 
-    // TODO: Integrate with email service (SendGrid, Resend, etc.)
-    // For now, we'll just log the broadcast attempt
-    console.log('Newsletter broadcast:', {
-      subject,
-      message,
-      recipientCount: subscribers.length,
-      recipients: subscribers.map(s => s.email)
-    });
+    // Send the broadcast to each active subscriber.
+    const html = `<div>${message}</div>`;
+    const results = await Promise.allSettled(
+      subscribers.map((subscriber) =>
+        sendEmail({ to: subscriber.email, subject, html, text: message })
+      )
+    );
 
-    // In a production environment, you would:
-    // 1. Use an email service like SendGrid or Resend
-    // 2. Send emails in batches to avoid rate limits
-    // 3. Track delivery status
-    // 4. Handle bounces and unsubscribes
-    //
-    // Example with Resend:
-    // const resend = new Resend(process.env.RESEND_API_KEY);
-    // for (const subscriber of subscribers) {
-    //   await resend.emails.send({
-    //     from: 'newsletter@respectthetechnique.com',
-    //     to: subscriber.email,
-    //     subject: subject,
-    //     text: message,
-    //   });
-    // }
+    const sentCount = results.filter((r) => r.status === 'fulfilled').length;
+    const failedCount = results.length - sentCount;
 
     return NextResponse.json({
       success: true,
-      message: `Newsletter broadcast queued for ${subscribers.length} subscribers`,
-      recipientCount: subscribers.length
+      message: `Newsletter broadcast sent to ${sentCount} subscribers`,
+      recipientCount: subscribers.length,
+      sentCount,
+      failedCount,
     });
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Newsletter broadcast error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to send newsletter broadcast' },
+      { error: error instanceof Error ? error.message : 'Failed to send newsletter broadcast' },
       { status: 500 }
     );
   }

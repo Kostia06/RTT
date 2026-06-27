@@ -1,76 +1,62 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db/client';
+import { time_entries, user as userTable } from '@/lib/db/schema';
+import { and, eq, gte, lte, isNull, desc } from 'drizzle-orm';
+import { requireUser, hasRole } from '@/lib/auth/guards';
+
+type TimeEntryRecord = typeof time_entries.$inferSelect;
+
+function serializeEntry(entry: TimeEntryRecord) {
+  return {
+    id: entry.id,
+    employeeId: entry.employee_id,
+    employeeName: entry.employee_name,
+    clockIn: entry.clock_in,
+    clockOut: entry.clock_out,
+    totalHours: entry.total_hours,
+    date: entry.clock_in.split('T')[0],
+    notes: entry.notes || '',
+    isManual: entry.is_manual,
+  };
+}
 
 export async function GET(request: Request) {
   try {
+    const gate = await requireUser(request);
+    if (gate.error) return gate.error;
+    const { user } = gate;
+
     const { searchParams } = new URL(request.url);
-    const employeeId = searchParams.get('employeeId');
+    const requestedEmployeeId = searchParams.get('employeeId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Check if there's an authenticated user
-    const authSupabase = await createClient();
-    const { data: { user }, error: userError } = await authSupabase.auth.getUser();
+    // Employees only see their own entries; managers/admins may scope to anyone.
+    const isPrivileged = hasRole(user.role, 'manager');
+    const effectiveEmployeeId = isPrivileged
+      ? requestedEmployeeId ?? null
+      : user.id;
 
-    let supabase;
-    let effectiveEmployeeId: string | null = null;
+    const db = await getDb();
 
-    if (user) {
-      // Manual flow - user is logged in
-      console.log('GET: Authenticated user flow:', user.id);
-      const role = user.user_metadata?.role;
-      if (role !== 'admin' && role !== 'employee') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-      }
-
-      // Use regular client for authenticated users
-      supabase = authSupabase;
-
-      // Filter by employee (non-admin users only see their own entries)
-      if (role !== 'admin') {
-        effectiveEmployeeId = user.id;
-      } else if (employeeId) {
-        effectiveEmployeeId = employeeId;
-      }
-    } else if (employeeId) {
-      // QR code flow - no authenticated user, but employeeId provided
-      // Use service role client to bypass RLS
-      console.log('GET: QR code flow, using service role client for employee:', employeeId);
-      supabase = createServiceClient();
-      effectiveEmployeeId = employeeId;
-    } else {
-      // No user and no employeeId - not authorized
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Build query
-    let query = supabase
-      .from('time_entries')
-      .select('*')
-      .order('clock_in', { ascending: false });
-
-    // Filter by employee if specified
+    const conditions = [];
     if (effectiveEmployeeId) {
-      query = query.eq('employee_id', effectiveEmployeeId);
+      conditions.push(eq(time_entries.employee_id, effectiveEmployeeId));
     }
-
-    // Filter by date range
     if (startDate) {
-      query = query.gte('clock_in', startDate);
+      conditions.push(gte(time_entries.clock_in, startDate));
     }
     if (endDate) {
-      query = query.lte('clock_in', endDate);
+      conditions.push(lte(time_entries.clock_in, endDate));
     }
 
-    const { data: entries, error } = await query;
+    const rows = await db
+      .select()
+      .from(time_entries)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(time_entries.clock_in));
 
-    if (error) {
-      console.error('Error fetching time entries:', error);
-      return NextResponse.json({ error: 'Failed to fetch time entries' }, { status: 500 });
-    }
-
-    // Transform database fields to match frontend expectations
-    const transformedEntries = entries.map(entry => ({
+    const transformedEntries = rows.map((entry) => ({
       id: entry.id,
       employeeId: entry.employee_id,
       employeeName: entry.employee_name,
@@ -90,93 +76,66 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireUser(request);
+    if (gate.error) return gate.error;
+    const { user } = gate;
+
     const body = await request.json();
     const { action, entryId, notes, employeeId: providedEmployeeId } = body;
-    console.log('POST /api/employee/time-tracking - Body:', { action, entryId, providedEmployeeId });
 
-    // For QR code flow, employeeId can be provided
-    // For manual flow, use authenticated user
-    let effectiveEmployeeId: string;
-    let employeeName: string;
-    let useServiceRole = false;
+    const isPrivileged = hasRole(user.role, 'manager');
 
-    if (providedEmployeeId) {
-      // QR code flow - validate employee exists using service role client
-      const serviceSupabase = createServiceClient();
-      const { data: employeeData, error: employeeError } = await serviceSupabase.auth.admin.getUserById(providedEmployeeId);
+    // Acting employee is the session user. Managers/admins may act for others.
+    let effectiveEmployeeId = user.id;
+    let employeeName = user.name || user.email || 'Unknown';
 
-      if (employeeError || !employeeData?.user) {
+    if (providedEmployeeId && providedEmployeeId !== user.id) {
+      if (!isPrivileged) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      const lookupDb = await getDb();
+      const [target] = await lookupDb
+        .select()
+        .from(userTable)
+        .where(eq(userTable.id, providedEmployeeId))
+        .limit(1);
+      if (!target) {
         return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
       }
-
-      effectiveEmployeeId = providedEmployeeId;
-      employeeName = employeeData.user.user_metadata?.name || employeeData.user.email || 'Unknown';
-      useServiceRole = true; // Use service role to bypass RLS for QR flow
-    } else {
-      // Manual flow - require authentication
-      const supabase = await createClient();
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-      }
-
-      const role = user.user_metadata?.role;
-      if (role !== 'admin' && role !== 'employee') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-      }
-
-      effectiveEmployeeId = user.id;
-      employeeName = user.user_metadata?.name || user.email || 'Unknown';
-      useServiceRole = false;
+      effectiveEmployeeId = target.id;
+      employeeName = target.name || target.email || 'Unknown';
     }
 
-    // Use appropriate client based on flow
-    const supabase = useServiceRole ? createServiceClient() : await createClient();
+    const db = await getDb();
 
     if (action === 'clockIn') {
-      // Check if already clocked in
-      console.log('Checking for active entries for employee:', effectiveEmployeeId);
-      const { data: activeEntries, error: checkError } = await supabase
-        .from('time_entries')
-        .select('*')
-        .eq('employee_id', effectiveEmployeeId)
-        .is('clock_out', null);
-
-      console.log('Active entries check result:', { activeEntries, checkError });
-
-      if (checkError) {
-        console.error('Error checking active entries:', checkError);
-        return NextResponse.json({ error: 'Failed to check clock-in status' }, { status: 500 });
-      }
-
-      if (activeEntries && activeEntries.length > 0) {
-        console.log('Employee already has active entry:', activeEntries[0]);
-        return NextResponse.json(
-          { error: 'Already clocked in' },
-          { status: 400 }
+      const activeEntries = await db
+        .select()
+        .from(time_entries)
+        .where(
+          and(
+            eq(time_entries.employee_id, effectiveEmployeeId),
+            isNull(time_entries.clock_out)
+          )
         );
+
+      if (activeEntries.length > 0) {
+        return NextResponse.json({ error: 'Already clocked in' }, { status: 400 });
       }
 
-      // Create new time entry
-      console.log('Creating new entry for:', { effectiveEmployeeId, employeeName, useServiceRole });
-      const { data: newEntry, error: insertError } = await supabase
-        .from('time_entries')
-        .insert({
+      const now = new Date().toISOString();
+      const [newEntry] = await db
+        .insert(time_entries)
+        .values({
+          id: crypto.randomUUID(),
           employee_id: effectiveEmployeeId,
           employee_name: employeeName,
-          clock_in: new Date().toISOString(),
+          clock_in: now,
           notes: notes || '',
+          is_manual: false,
+          created_at: now,
         })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Error inserting time entry:', insertError);
-        return NextResponse.json({ error: 'Failed to clock in' }, { status: 500 });
-      }
-
-      console.log('Successfully created entry:', newEntry.id);
+        .returning();
 
       return NextResponse.json({
         success: true,
@@ -193,73 +152,39 @@ export async function POST(request: Request) {
     }
 
     if (action === 'clockOut') {
-      const { breakMinutes = 0, roundToNearest15 = false, manualClockOut, calculatedMinutes } = body;
+      const { breakMinutes = 0, roundToNearest15 = false, manualClockOut } = body;
 
-      // Fetch the entry
-      const { data: entry, error: fetchError } = await supabase
-        .from('time_entries')
-        .select('*')
-        .eq('id', entryId)
-        .single();
+      const [entry] = await db
+        .select()
+        .from(time_entries)
+        .where(eq(time_entries.id, entryId))
+        .limit(1);
 
-      if (fetchError || !entry) {
+      if (!entry) {
         return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
       }
 
-      // Verify ownership
-      // For QR flow: Only allow clocking out own entry
-      // For manual flow: Allow if it's your entry or you're an admin
-      if (!useServiceRole) {
-        // Manual flow - check if user is admin
-        const authSupabase = await createClient();
-        const { data: { user } } = await authSupabase.auth.getUser();
-        const role = user?.user_metadata?.role;
-
-        if (entry.employee_id !== effectiveEmployeeId && role !== 'admin') {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-        }
-      } else {
-        // QR flow - only allow clocking out own entry
-        if (entry.employee_id !== effectiveEmployeeId) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-        }
+      // Only the owner or a manager/admin may clock out an entry.
+      if (entry.employee_id !== user.id && !isPrivileged) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
 
       if (entry.clock_out) {
-        return NextResponse.json(
-          { error: 'Already clocked out' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Already clocked out' }, { status: 400 });
       }
 
-      // Calculate total hours
       const clockOutTime = manualClockOut ? new Date(manualClockOut) : new Date();
       const clockInTime = new Date(entry.clock_in);
 
-      // Calculate total minutes worked
-      let totalMinutes = Math.floor((clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60));
-
-      // Subtract break time
+      let totalMinutes = Math.floor(
+        (clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60)
+      );
       totalMinutes -= breakMinutes;
-
-      // Round to nearest 15 if enabled
       if (roundToNearest15) {
         totalMinutes = Math.round(totalMinutes / 15) * 15;
       }
-
-      // Convert to hours (with 2 decimal places)
       const totalHours = Math.round((totalMinutes / 60) * 100) / 100;
 
-      console.log('Clock out calculation:', {
-        clockInTime: clockInTime.toISOString(),
-        clockOutTime: clockOutTime.toISOString(),
-        breakMinutes,
-        roundToNearest15,
-        totalMinutes,
-        totalHours
-      });
-
-      // Update entry with break time info in notes if applicable
       let updatedNotes = notes || entry.notes || '';
       if (breakMinutes > 0) {
         updatedNotes = updatedNotes
@@ -267,22 +192,16 @@ export async function POST(request: Request) {
           : `Break: ${breakMinutes}min`;
       }
 
-      // Update entry
-      const { data: updatedEntry, error: updateError } = await supabase
-        .from('time_entries')
-        .update({
+      const [updatedEntry] = await db
+        .update(time_entries)
+        .set({
           clock_out: clockOutTime.toISOString(),
           total_hours: totalHours,
           notes: updatedNotes,
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', entryId)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating time entry:', updateError);
-        return NextResponse.json({ error: 'Failed to clock out' }, { status: 500 });
-      }
+        .where(eq(time_entries.id, entryId))
+        .returning();
 
       return NextResponse.json({
         success: true,
@@ -296,32 +215,42 @@ export async function POST(request: Request) {
           date: updatedEntry.clock_in.split('T')[0],
           notes: updatedEntry.notes || '',
         },
-        message: `Clocked out successfully. Total: ${totalHours.toFixed(2)} hours${breakMinutes > 0 ? ` (${breakMinutes}min break deducted)` : ''}`,
+        message: `Clocked out successfully. Total: ${totalHours.toFixed(2)} hours${
+          breakMinutes > 0 ? ` (${breakMinutes}min break deducted)` : ''
+        }`,
       });
     }
 
     if (action === 'manualEntry') {
-      const { clockIn, clockOut, notes } = body;
+      const { clockIn, clockOut } = body;
 
       if (!clockIn || !clockOut) {
-        return NextResponse.json({ error: 'Clock in and clock out times are required' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Clock in and clock out times are required' },
+          { status: 400 }
+        );
       }
 
       const clockInTime = new Date(clockIn);
       const clockOutTime = new Date(clockOut);
 
-      // Calculate total hours
-      const totalMinutes = Math.floor((clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60));
+      const totalMinutes = Math.floor(
+        (clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60)
+      );
       const totalHours = Math.round((totalMinutes / 60) * 100) / 100;
 
       if (totalHours < 0) {
-        return NextResponse.json({ error: 'Clock out time must be after clock in time' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Clock out time must be after clock in time' },
+          { status: 400 }
+        );
       }
 
-      // Create manual time entry
-      const { data: newEntry, error: insertError } = await supabase
-        .from('time_entries')
-        .insert({
+      const now = new Date().toISOString();
+      const [newEntry] = await db
+        .insert(time_entries)
+        .values({
+          id: crypto.randomUUID(),
           employee_id: effectiveEmployeeId,
           employee_name: employeeName,
           clock_in: clockInTime.toISOString(),
@@ -329,28 +258,13 @@ export async function POST(request: Request) {
           total_hours: totalHours,
           notes: notes || '',
           is_manual: true,
+          created_at: now,
         })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Error creating manual entry:', insertError);
-        return NextResponse.json({ error: 'Failed to create manual entry' }, { status: 500 });
-      }
+        .returning();
 
       return NextResponse.json({
         success: true,
-        entry: {
-          id: newEntry.id,
-          employeeId: newEntry.employee_id,
-          employeeName: newEntry.employee_name,
-          clockIn: newEntry.clock_in,
-          clockOut: newEntry.clock_out,
-          totalHours: newEntry.total_hours,
-          date: newEntry.clock_in.split('T')[0],
-          notes: newEntry.notes || '',
-          isManual: newEntry.is_manual,
-        },
+        entry: serializeEntry(newEntry),
         message: 'Manual entry created successfully',
       });
     }

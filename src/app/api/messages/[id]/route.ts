@@ -1,28 +1,47 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { getDb } from '@/lib/db/client';
+import { contact_messages } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
-// PATCH - Update message status
+// GET - Fetch a single message (employee only)
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
+
+    const { id } = await params;
+    const db = await getDb();
+    const [message] = await db
+      .select()
+      .from(contact_messages)
+      .where(eq(contact_messages.id, id));
+
+    if (!message) {
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message });
+  } catch (error) {
+    console.error('Error fetching message:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch message', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Update message status (employee only)
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is employee or admin
-    const isEmployee = user.user_metadata?.role === 'employee' || user.user_metadata?.role === 'admin';
-    if (!isEmployee) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
     const { id } = await params;
     const body = await request.json();
@@ -35,17 +54,15 @@ export async function PATCH(
       );
     }
 
-    // Use service client to update message
-    const serviceClient = await createServiceClient();
-    const { data: updatedMessage, error } = await serviceClient
-      .from('contact_messages')
-      .update({ status })
-      .eq('id', id)
-      .select()
-      .single();
+    const db = await getDb();
+    const [updatedMessage] = await db
+      .update(contact_messages)
+      .set({ status, updated_at: new Date().toISOString() })
+      .where(eq(contact_messages.id, id))
+      .returning();
 
-    if (error) {
-      throw error;
+    if (!updatedMessage) {
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 });
     }
 
     return NextResponse.json({ message: updatedMessage });
@@ -58,41 +75,18 @@ export async function PATCH(
   }
 }
 
-// DELETE - Delete a message
+// DELETE - Delete a message (employee only)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    const isAdmin = user.user_metadata?.role === 'admin';
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Only admins can delete messages' }, { status: 403 });
-    }
+    const gate = await requireRole(request, 'employee');
+    if (gate.error) return gate.error;
 
     const { id } = await params;
-
-    // Use service client to delete message
-    const serviceClient = await createServiceClient();
-    const { error } = await serviceClient
-      .from('contact_messages')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      throw error;
-    }
+    const db = await getDb();
+    await db.delete(contact_messages).where(eq(contact_messages.id, id));
 
     return NextResponse.json({ message: 'Message deleted successfully' });
   } catch (error) {

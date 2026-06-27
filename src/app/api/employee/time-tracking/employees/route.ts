@@ -1,34 +1,38 @@
-import { createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db/client';
+import { user } from '@/lib/db/schema';
+import { inArray } from 'drizzle-orm';
+import { requireRole } from '@/lib/auth/guards';
 
 /**
  * GET /api/employee/time-tracking/employees
- * Returns list of active employees for QR code clock-in selection
- * Public endpoint (no auth required) - only returns id and name
+ * Returns the list of staff (employee/manager/admin) for selection.
+ * Manager+ only.
  */
 export async function GET(request: Request) {
   try {
-    const supabase = createServiceClient();
+    const gate = await requireRole(request, 'manager');
+    if (gate.error) return gate.error;
 
-    // Fetch all users with service role
-    const { data, error } = await supabase.auth.admin.listUsers();
-
-    if (error) {
-      console.error('Error fetching users:', error);
-      return NextResponse.json({ error: 'Failed to fetch employees' }, { status: 500 });
-    }
-
-    // Filter to only employees and admins, return minimal data
-    const employees = data.users
-      .filter(user => {
-        const role = user.user_metadata?.role;
-        return role === 'employee' || role === 'admin';
-      })
-      .map(user => ({
+    const db = await getDb();
+    const rows = await db
+      .select({
         id: user.id,
-        name: user.user_metadata?.name || user.email || 'Unknown Employee',
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      })
+      .from(user)
+      .where(inArray(user.role, ['employee', 'manager', 'admin']));
+
+    const employees = rows
+      .map((u) => ({
+        id: u.id,
+        name: u.name || u.email || 'Unknown Employee',
+        email: u.email,
+        role: u.role,
       }))
-      .sort((a, b) => a.name.localeCompare(b.name)); // Alphabetical order
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     return NextResponse.json({ employees });
   } catch (error) {

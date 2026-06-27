@@ -1,36 +1,18 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import Link from 'next/link';
 import { ProductDetail } from '@/components/products/ProductDetail';
 import { IProduct } from '@/types';
+import { getDb } from '@/lib/db/client';
+import { getProductDetail } from '@/lib/db/queries/products';
 
-// Build an absolute base URL from the incoming request so the server-side fetch
-// works in every environment (prod Worker, local dev) — a hardcoded
-// localhost fallback 404s on Cloudflare where there is no localhost:3000.
-async function getBaseUrl(): Promise<string> {
-  const h = await headers();
-  const host = h.get('host');
-  if (host) {
-    const proto = h.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
-    return `${proto}://${host}`;
-  }
-  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-}
-
+// Query the database directly (server component) — self-fetching our own API
+// fails on Cloudflare Workers (no localhost; same-host subrequests are unreliable).
 async function getProduct(slug: string): Promise<IProduct | null> {
   try {
-    const baseUrl = await getBaseUrl();
-    const response = await fetch(`${baseUrl}/api/products/${slug}`, {
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data.product;
+    const db = await getDb();
+    const product = await getProductDetail(db, slug);
+    return (product as unknown as IProduct) ?? null;
   } catch (error) {
     console.error('Error fetching product:', error);
     return null;

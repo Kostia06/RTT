@@ -1,17 +1,29 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import { ProductDetail } from '@/components/products/ProductDetail';
 import { IProduct } from '@/types';
 
+// Build an absolute base URL from the incoming request so the server-side fetch
+// works in every environment (prod Worker, local dev) — a hardcoded
+// localhost fallback 404s on Cloudflare where there is no localhost:3000.
+async function getBaseUrl(): Promise<string> {
+  const h = await headers();
+  const host = h.get('host');
+  if (host) {
+    const proto = h.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
+    return `${proto}://${host}`;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+}
+
 async function getProduct(slug: string): Promise<IProduct | null> {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/products/${slug}`,
-      {
-        cache: 'no-store',
-      }
-    );
+    const baseUrl = await getBaseUrl();
+    const response = await fetch(`${baseUrl}/api/products/${slug}`, {
+      cache: 'no-store',
+    });
 
     if (!response.ok) {
       return null;
